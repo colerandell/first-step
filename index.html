@@ -239,7 +239,7 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
     screen: "splash", tab: "today",
     tasks: new Map(), settings: { ...DEFAULT_SETTINGS }, profile: null, claudeName: "",
     ready: false, mode: "loading", busy: new Set(), capture: { phase: "idle" },
-    hideExample: false, extraToday: 0, todayDone: null, confirmDelete: false
+    hideExample: false, confirmDelete: false
   };
   let col = null, sample = null;
   const calState = { stepKey: "", open: false, pick: "", custom: "", busy: false, msg: "", err: false };
@@ -289,6 +289,10 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
   const SPARK = '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7z"/>';
   const put = (el, ...kids) => el.append(...kids.flat().filter(k => k != null && k !== false));
   const startOfDay = (t=Date.now()) => { const d = new Date(t); d.setHours(0,0,0,0); return d.getTime(); };
+  // "Today" for the one-step-a-day loop runs from 4 AM to 4 AM, so a step done late at night
+  // still counts for the day you were in.
+  const DAY_STARTS_AT = 4;
+  const appDayStart = (t=Date.now()) => { const d = new Date(t); if (d.getHours() < DAY_STARTS_AT) d.setDate(d.getDate() - 1); d.setHours(DAY_STARTS_AT,0,0,0); return d.getTime(); };
   const daysSince = (t) => Math.max(0, Math.floor((startOfDay() - startOfDay(t)) / DAY));
   function daysUntil(dateStr){ if(!dateStr) return null; const [y,m,d] = dateStr.split("-").map(Number); return Math.round((new Date(y,m-1,d).getTime() - startOfDay())/DAY); }
   const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
@@ -319,7 +323,7 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
   }
 
   // ---------- storage ----------
-  const LS = { tasks: "first-step-tasks", settings: "first-step-settings", profile: "first-step-profile", signedOut: "first-step-signed-out" };
+  const LS = { tasks: "first-step-tasks", settings: "first-step-settings", profile: "first-step-profile", signedOut: "first-step-signed-out", more: "first-step-more" };
   const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
   const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
   function loadLocal(){
@@ -377,13 +381,12 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
     if (t.example) { copy.id = uid(); delete copy.example; copy.createdAt = copy.lastProgressAt = Date.now(); }
     return copy;
   }
-  function toggleStep(t, stepId, fromToday){
+  function toggleStep(t, stepId){
     t = realTask(t);
     const s = t.steps.find(x => x.id === stepId); if (!s) return;
     s.done = !s.done; s.doneAt = s.done ? Date.now() : null;
     if (s.done) { t.lastProgressAt = Date.now(); t.snoozedUntil = 0; }
     if (isDone(t)) t.completedAt = Date.now(); else delete t.completedAt;
-    if (fromToday && s.done) state.todayDone = { text: s.text };
     if (s.done && !t.example) { stats.doneTotal++; const at = stats.shown[s.id]; if (at && Date.now() - at <= DAY) stats.doneFast++; saveStats(); }
     persist(t);
   }
@@ -394,7 +397,7 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
     stats.edits++; saveStats();
     persist(cur);
   }
-  function snooze(t){ t = realTask(t); t.snoozedUntil = startOfDay() + DAY; persist(t); }
+  function snooze(t){ t = realTask(t); t.snoozedUntil = appDayStart() + DAY; persist(t); }
   function addStep(t, text){ t = realTask(t); t.steps.push({ id: uid(), text: text.slice(0,160), minutes: 10, done:false }); persist(t); }
   async function regenerate(t){
     if (!sample || state.busy.has(t.id)) return;
@@ -529,7 +532,7 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
       steps: pr.steps.map(([text, minutes]) => ({ id: uid(), text, minutes, done:false })) };
   }
   async function addPreset(pr){
-    state.extraToday = 0; state.todayDone = null; stats.added++; saveStats();
+    wantMore(); stats.added++; saveStats();
     stats.added++; saveStats();
     if (state.guide) state.guide = "done";
     await persist(presetTask(pr));
@@ -781,16 +784,25 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
   }
 
   // ---------- app: today ----------
-  function greeting(){ const hr = new Date().getHours(); return hr < 12 ? "Morning" : hr < 18 ? "Afternoon" : "Evening"; }
+  function greeting(){ const hr = new Date().getHours(); return hr >= 5 && hr < 12 ? "Morning" : hr >= 12 && hr < 17 ? "Afternoon" : hr >= 17 && hr < 22 ? "Evening" : "Hi"; }
+  // The most recent step finished today, unless the user has since asked for another one.
+  function doneToday(){
+    const since = Math.max(appDayStart(), Number(lsGet(LS.more)) || 0);
+    let last = null;
+    for (const t of state.tasks.values()) for (const s of t.steps) if (s.done && s.doneAt > since && (!last || s.doneAt > last.doneAt)) last = s;
+    return last;
+  }
+  function wantMore(){ lsSet(LS.more, String(Date.now())); }
   function tabToday(){
     const tasks = visibleTasks();
     const r = ranked(tasks);
     const card = h("div", { class:"card" });
-    if (state.todayDone && state.extraToday === 0) {
+    const finished = doneToday();
+    if (finished) {
       put(card, 
         h("p", { class:"step-head", text:"That's today's step. Done." }),
-        h("p", { class:"from" }, "You finished: ", h("b", { text: state.todayDone.text })),
-        r.length ? h("div", { class:"row" }, h("button", { type:"button", text:"Give me one more", onclick: () => { state.extraToday = 1; state.todayDone = null; render(); } })) : null);
+        h("p", { class:"from" }, "You finished: ", h("b", { text: finished.text })),
+        r.length ? h("div", { class:"row" }, h("button", { type:"button", text:"Give me one more", onclick: () => { wantMore(); render(); } })) : null);
     } else if (!tasks.length) {
       put(card,
         h("p", { class:"step-head", text:"Let's get started" }),
@@ -814,7 +826,7 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
         h("p", { class:"step-head", text: s.text }),
         h("p", { class:"from" }, "Part of ", h("b", { text: t.title }), ` · step ${t.steps.indexOf(s)+1} of ${t.steps.length}`),
         h("div", { class:"row" },
-          h("button", { class:"primary", type:"button", text:"Done", onclick: () => toggleStep(t, s.id, true) }),
+          h("button", { class:"primary", type:"button", text:"Done", onclick: () => toggleStep(t, s.id) }),
           sample ? h("button", { type:"button", text: busy ? "Splitting…" : "Still too big", disabled: busy, onclick: () => splitStep(t, s.id) }) : null,
           h("button", { class:"quiet", type:"button", text:"Not today", onclick: () => snooze(t) })),
         calendarBlock(t, s),
@@ -949,7 +961,7 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
       try { t.steps = cleanSteps(await sample.json(breakdownPrompt(t))); if (!t.steps.length) { msg = "No steps came back. Add your first one in Tasks."; err = true; } }
       catch(e){ msg = aiErr(e); err = true; }
     } else { msg = "Added. AI steps aren't set up yet, so add your first step in Tasks."; err = true; }
-    state.extraToday = 0; state.todayDone = null;
+    wantMore();
     stats.added++; saveStats();
     if (state.guide) state.guide = "done";
     await persist(t);
@@ -1098,6 +1110,8 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
     app.replaceChildren(...content);
     if (focusId) { const el = $(focusId); if (el) el.focus(); }
   }
+
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && state.screen === "app") render(); });
 
   // ---------- boot ----------
   initStats();
