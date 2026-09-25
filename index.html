@@ -136,7 +136,12 @@ li.done textarea.step-edit{color:var(--muted);text-decoration:line-through}
 .wheel::-webkit-scrollbar{display:none}
 .wheel div{height:36px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;font-size:15px;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums;cursor:pointer;user-select:none}
 .wheel div.on{color:var(--accent);font-weight:600}
+.wheel-box{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.wheel-custom-row{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--muted)}
+.wheel-custom-row[hidden]{display:none}
+.wheel-custom-row input{width:72px;min-height:38px;padding:6px 8px;text-align:center}
 .steps-pick{display:flex;gap:14px;align-items:center}
+.steps-pick .wheel-box{align-items:flex-start}
 .steps-pick .fine{font-size:13.5px;line-height:1.45}
 .switch{position:relative;flex:none;width:50px;height:30px}
 .switch input{position:absolute;inset:0;opacity:0;margin:0;width:100%;height:100%;min-height:0;cursor:pointer;z-index:1}
@@ -250,8 +255,10 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
   const DEFAULT_SETTINGS = { stakes: true, askQuestions: true, firstStepMax: 10, maxSteps: 5, noDeadlineFirst: true, theme: "system", calendar: true };
   // Step counts run 2 to 10, and the first step is never longer than 10 minutes.
   const STEP_COUNTS = [2,3,4,5,6,7,8,9,10], FIRST_STEP_MINUTES = [2,3,4,5,6,7,8,9,10];
+  const MAX_STEPS = 100; // the "Custom" step count goes up to this
   const inRange = (v, list, d) => list.includes(v) ? v : d;
-  function normSettings(st){ st.maxSteps = inRange(st.maxSteps, STEP_COUNTS, 5); st.firstStepMax = inRange(st.firstStepMax, FIRST_STEP_MINUTES, 10); return st; }
+  const stepCountOk = (v) => Number.isInteger(v) && v >= 2 && v <= MAX_STEPS;
+  function normSettings(st){ st.maxSteps = stepCountOk(st.maxSteps) ? st.maxSteps : 5; st.firstStepMax = inRange(st.firstStepMax, FIRST_STEP_MINUTES, 10); return st; }
   const FOCUS = ["School", "Job search", "Career growth", "Returning to work", "Something else"];
 
   const state = {
@@ -382,7 +389,7 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
   function cleanSteps(res, max){
     const arr = Array.isArray(res?.steps) ? res.steps : [];
     return arr.map(s => ({ id: uid(), text: String(s.text||"").trim().slice(0,160), minutes: Math.max(1, Math.min(240, Math.round(Number(s.minutes)||10))), done:false, ai:true }))
-              .filter(s => s.text).slice(0, max || 10);
+              .filter(s => s.text).slice(0, max || MAX_STEPS);
   }
   function aiErr(e){
     const c = e && e.code;
@@ -961,7 +968,7 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
         sample ? h("div", { class:"field" },
           h("span", { class:"lbl", id:"q-steps-l", text:"How many steps?" }),
           h("div", { class:"steps-pick" },
-            wheel("q-steps", STEP_COUNTS, c.steps || state.settings.maxSteps, n => `${n} steps`, v => { c.steps = v; }, "q-steps-l"),
+            wheel("q-steps", STEP_COUNTS, c.steps || state.settings.maxSteps, n => `${n} steps`, v => { c.steps = v; }, "q-steps-l", { max: MAX_STEPS, unit: "steps" }),
             h("p", { class:"fine", text: (c.rec ? `Suggested: ${c.rec} for this task. ` : "") + "Fewer steps means each one is bigger." }))) : null,
         h("button", { class:"primary block", type:"button", text: gen ? "Writing steps…" : "Break it down", disabled: gen, onclick: () => submitCapture(false) }),
         h("div", { class:"row" },
@@ -1048,23 +1055,35 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
     return h("div", { class:"setting" }, h("div", { class:"txt" }, forId ? h("label", { for: forId, class:"name", style:"font-size:15px;color:var(--ink)", text: name }) : h("span", { class:"name", id: nameId, text: name }), desc ? h("span", { class:"desc", text: desc }) : null), control);
   }
   // A scroll wheel for picking a number. Scroll, tap a number, or use the arrow keys.
-  function wheel(id, values, value, fmt, onPick, labelledBy){
-    const ROW = 36;
-    let idx = Math.max(0, values.indexOf(value)), target = idx, timer, acc = 0, lastNudge = 0;
-    const items = values.map((v, i) => h("div", { "aria-hidden":"true", text: fmt(v), onclick: () => pick(i) }));
+  // With `custom` ({ max, unit }), a last "Custom" row reveals a box for any number up to max.
+  function wheel(id, values, value, fmt, onPick, labelledBy, custom){
+    const ROW = 36, rows = custom ? values.length + 1 : values.length, CUSTOM = values.length;
+    let customVal = custom && !values.includes(value) ? value : null;
+    let idx = values.includes(value) ? values.indexOf(value) : custom && customVal ? CUSTOM : 0;
+    let target = idx, timer, acc = 0, lastNudge = 0;
+    const valueAt = (i) => i === CUSTOM ? (customVal || values[values.length - 1] + 1) : values[i];
+    const labelAt = (i) => i === CUSTOM ? "Custom" : fmt(values[i]);
+    const items = Array.from({ length: rows }, (_, i) => h("div", { "aria-hidden":"true", text: labelAt(i), onclick: () => pick(i) }));
     const el = h("div", { class:"wheel", id, tabindex:"0", role:"spinbutton", "aria-labelledby": labelledBy,
-      "aria-valuemin": String(values[0]), "aria-valuemax": String(values[values.length-1]) }, items);
-    const clamp = (i) => Math.max(0, Math.min(values.length - 1, i));
-    const mark = (i) => { items.forEach((it, k) => it.classList.toggle("on", k === i)); el.setAttribute("aria-valuenow", String(values[i])); el.setAttribute("aria-valuetext", fmt(values[i])); };
-    const commit = (i) => { clearTimeout(timer); timer = setTimeout(() => { if (i !== idx) { idx = i; onPick(values[i]); } }, 160); };
+      "aria-valuemin": String(values[0]), "aria-valuemax": String(custom ? custom.max : values[values.length-1]) }, items);
+    const box = custom ? h("input", { id: id + "-custom", class:"wheel-custom", type:"number", inputmode:"numeric", min: String(values[0]), max: String(custom.max),
+      value: String(valueAt(CUSTOM)), "aria-label": `Custom number of ${custom.unit}, up to ${custom.max}` }) : null;
+    const customRow = custom ? h("label", { class:"wheel-custom-row", hidden: idx !== CUSTOM }, box, h("span", { text: `max ${custom.max}` })) : null;
+    const clamp = (i) => Math.max(0, Math.min(rows - 1, i));
+    const mark = (i) => {
+      items.forEach((it, k) => it.classList.toggle("on", k === i));
+      el.setAttribute("aria-valuenow", String(valueAt(i))); el.setAttribute("aria-valuetext", i === CUSTOM ? `Custom: ${fmt(valueAt(i))}` : fmt(values[i]));
+      if (customRow) customRow.hidden = i !== CUSTOM;
+    };
+    const commit = (i) => { clearTimeout(timer); timer = setTimeout(() => { if (i !== idx) { idx = i; onPick(valueAt(i)); } }, 160); };
     // Taps, mouse wheel and arrow keys set the value directly; the scroll just animates to it.
     const pick = (i) => { i = clamp(i); target = i; lastNudge = Date.now(); mark(i); commit(i); el.scrollTo({ top: i * ROW, behavior: "smooth" }); };
-    // A touch drag or flick settles on whichever number is in the middle.
+    // A touch drag or flick settles on whichever row is in the middle.
     el.addEventListener("scroll", () => {
       if (Date.now() - lastNudge < 600) return;
       const i = clamp(Math.round(el.scrollTop / ROW)); target = i; mark(i); commit(i);
     });
-    // One number per mouse-wheel click or arrow key; trackpad swipes add up the same way.
+    // One row per mouse-wheel click or arrow key; trackpad swipes add up the same way.
     const nudge = (d) => pick(target + d);
     el.addEventListener("wheel", e => {
       e.preventDefault();
@@ -1076,9 +1095,14 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
     el.addEventListener("keydown", e => {
       if (e.key === "ArrowUp" || e.key === "ArrowDown") { e.preventDefault(); nudge(e.key === "ArrowDown" ? 1 : -1); }
     });
+    if (box) {
+      const read = () => { const n = Math.round(Number(box.value)); return Number.isFinite(n) && box.value !== "" ? Math.max(values[0], Math.min(custom.max, n)) : null; };
+      box.addEventListener("input", () => { const n = read(); if (n != null && n === Number(box.value)) { customVal = n; idx = CUSTOM; mark(CUSTOM); onPick(n); } });
+      box.addEventListener("change", () => { const n = read() ?? valueAt(CUSTOM); box.value = String(n); customVal = n; idx = CUSTOM; mark(CUSTOM); onPick(n); });
+    }
     el.syncWheel = () => { el.scrollTop = idx * ROW; };
     mark(idx);
-    return h("div", { class:"wheel-wrap" }, el);
+    return h("div", { class:"wheel-box" }, h("div", { class:"wheel-wrap" }, el), customRow);
   }
   function toggle(id, key){
     const inp = h("input", { type:"checkbox", id, role:"switch", checked: !!state.settings[key], onchange: e => { state.settings[key] = e.target.checked; saveSettings(); } });
@@ -1114,7 +1138,7 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
       h("section", { class:"section" }, h("h2", { text:"Breakdowns" }), h("div", { class:"group" },
         settingRow("Ask clarifying questions", "One or two quick questions when a task is vague. Off means steps come back right away.", toggle("set-ask","askQuestions"), "set-ask"),
         settingRow("First step size", "The longest the first step can take. Never more than 10 minutes.", wheel("set-first", FIRST_STEP_MINUTES, state.settings.firstStepMax, n => `${n} min`, v => { state.settings.firstStepMax = v; saveSettings(true); }, "set-first-l"), null, "set-first-l"),
-        settingRow("Default steps", "Where the step count starts when you add a task. You can change it each time.", wheel("set-max", STEP_COUNTS, state.settings.maxSteps, n => `${n} steps`, v => { state.settings.maxSteps = v; saveSettings(true); }, "set-max-l"), null, "set-max-l"))),
+        settingRow("Default steps", "Where the step count starts when you add a task. You can change it each time.", wheel("set-max", STEP_COUNTS, state.settings.maxSteps, n => `${n} steps`, v => { state.settings.maxSteps = v; saveSettings(true); }, "set-max-l", { max: MAX_STEPS, unit: "steps" }), null, "set-max-l"))),
       h("section", { class:"section" }, h("h2", { text:"Google Calendar" }), h("div", { class:"group" },
         settingRow("Show calendar button", "Adds today's step to Google Calendar in one tap.", toggle("set-cal","calendar"), "set-cal"))),
       h("section", { class:"section" }, h("h2", { text:"Appearance" }), h("div", { class:"group" },
