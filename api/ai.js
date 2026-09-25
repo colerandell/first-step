@@ -3,7 +3,9 @@
 // three jobs and can't be used as a general-purpose proxy for your API key.
 
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-haiku-4-5";
+const FIRST_STEP_CEILING = 10; // the first step is never longer than this, whatever the setting says
 const clip = (v, n) => String(v ?? "").slice(0, n);
+const firstStepMax = (b) => [5, 10].includes(b.firstStepMax) ? b.firstStepMax : FIRST_STEP_CEILING;
 
 async function signedIn(req) {
   const url = process.env.SUPABASE_URL, anon = process.env.SUPABASE_ANON_KEY;
@@ -28,7 +30,7 @@ Reply with JSON only: {"vague": true, "question": "..."} or {"vague": false, "qu
   if (b.kind === "breakdown") {
     const t = b.task || {};
     const maxSteps = [3, 5, 10].includes(b.maxSteps) ? b.maxSteps : 5;
-    const firstMax = [5, 10, 15].includes(b.firstStepMax) ? b.firstStepMax : 10;
+    const firstMax = firstStepMax(b);
     const ctx = [focus];
     if (t.purpose) ctx.push(`They answered "${clip(t.purposeQ || "What's this for?", 120)}": ${clip(t.purpose, 200)}`);
     if (t.timing && t.timing.date) ctx.push(`Timing: ${clip(t.timing.label || "deadline", 60)} on ${clip(t.timing.date, 10)} (today is ${clip(b.today, 10)})`);
@@ -66,33 +68,58 @@ export default async function handler(req, res) {
   if (!process.env.ANTHROPIC_API_KEY) return res.status(503).json({ code: "not_configured" });
   if (!(await signedIn(req))) return res.status(401).json({ code: "not_signed_in" });
 
-  const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+  let body;
+  try { body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {}); }
+  catch { return res.status(400).json({ code: "bad_request" }); }
   const prompt = buildPrompt(body);
   if (!prompt) return res.status(400).json({ code: "bad_request" });
 
   try {
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01"
-      },
-      body: JSON.stringify({ model: MODEL, max_tokens: 800, messages: [{ role: "user", content: prompt }] })
-    });
-    if (r.status === 429) return res.status(429).json({ code: "rate_limited" });
-    if (!r.ok) {
-      const err = await r.json().catch(() => ({}));
-      const detail = { status: r.status, type: err?.error?.type || null, message: String(err?.error?.message || "").slice(0, 300), model: MODEL };
-      console.error("Anthropic API error", detail);
-      return res.status(502).json({ code: "upstream_error", ...detail });
-    }
-    const data = await r.json();
-    const text = (data.content || []).filter(c => c.type === "text").map(c => c.text).join("");
-    const match = text.match(/\{[\s\S]*\}/);
-    if (!match) return res.status(502).json({ code: "invalid_json" });
-    return res.status(200).json(JSON.parse(match[0]));
-  } catch {
-    return res.status(502).json({ code: "upstream_error" });
+    const result = await askClaude(prompt);
+    if (body.kind === "breakdown") await enforceFirstStep(result, body);
+    return res.status(200).json(result);
+  } catch (e) {
+    return res.status(e.status || 502).json({ code: e.code || "upstream_error", ...e.detail });
   }
+}
+
+// Sends one prompt to Claude and returns the JSON object from its reply.
+async function askClaude(prompt) {
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": process.env.ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01"
+    },
+    body: JSON.stringify({ model: MODEL, max_tokens: 800, messages: [{ role: "user", content: prompt }] })
+  });
+  if (r.status === 429) throw { status: 429, code: "rate_limited" };
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    const detail = { status: r.status, type: err?.error?.type || null, message: String(err?.error?.message || "").slice(0, 300), model: MODEL };
+    console.error("Anthropic API error", detail);
+    throw { status: 502, code: "upstream_error", detail };
+  }
+  const data = await r.json();
+  const text = (data.content || []).filter(c => c.type === "text").map(c => c.text).join("");
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) throw { status: 502, code: "invalid_json" };
+  try { return JSON.parse(match[0]); } catch { throw { status: 502, code: "invalid_json" }; }
+}
+
+// If step 1 of a breakdown is over the first-step limit, asks Claude to split it
+// and puts the smaller steps in its place. On any failure, keeps the original breakdown.
+async function enforceFirstStep(result, b) {
+  const steps = Array.isArray(result.steps) ? result.steps : [];
+  const first = steps[0];
+  if (!first || !(Number(first.minutes) > firstStepMax(b))) return;
+  try {
+    const t = b.task || {};
+    const split = await askClaude(buildPrompt({ kind: "split", title: t.title, purpose: t.purpose, stepText: first.text }));
+    const smaller = Array.isArray(split.steps) ? split.steps.filter(s => s && s.text) : [];
+    if (!smaller.length || !(Number(smaller[0].minutes) <= firstStepMax(b))) return;
+    const maxSteps = [3, 5, 10].includes(b.maxSteps) ? b.maxSteps : 5;
+    result.steps = [...smaller, ...steps.slice(1)].slice(0, Math.max(maxSteps, smaller.length));
+  } catch { /* keep the original breakdown */ }
 }
