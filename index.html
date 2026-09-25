@@ -17,7 +17,10 @@
   --display:"Fraunces",Georgia,"Times New Roman",serif;
   --body:"Instrument Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:var(--body);
+  --app-w:460px;
 }
+@media (min-width:760px){:root{--app-w:720px}}
+@media (min-width:1100px){:root{--app-w:860px}}
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     color-scheme:dark;
@@ -33,9 +36,9 @@
 *{box-sizing:border-box}
 html,body{height:100%}
 body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
-.app{max-width:460px;min-height:100%;margin:0 auto;background:var(--app);display:flex;flex-direction:column;position:relative}
+.app{max-width:var(--app-w);min-height:100%;margin:0 auto;background:var(--app);display:flex;flex-direction:column;position:relative}
 @media (min-width:500px){.app{border-inline:1px solid var(--line)}}
-.screen{flex:1;display:flex;flex-direction:column;gap:22px;padding-inline:20px;padding-block:24px 110px}
+.screen{flex:1;display:flex;flex-direction:column;gap:22px;padding-inline:max(20px,env(safe-area-inset-left),env(safe-area-inset-right));padding-top:max(24px,env(safe-area-inset-top));padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))}
 .screen.center{justify-content:center;padding-block:40px}
 h1{font-family:var(--display);font-weight:600;font-size:28px;letter-spacing:-0.01em;margin:0;text-wrap:balance}
 h2{font-family:var(--body);font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
@@ -51,7 +54,7 @@ button.quiet{background:transparent;border-color:transparent;color:var(--muted);
 button.quiet:hover{color:var(--ink);border-color:var(--line)}
 button.danger{color:var(--err)}
 button:disabled{opacity:.55;cursor:default}
-input,select{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-height:44px;width:100%}
+input,select{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-height:44px;width:100%}
 label,.lbl{font-size:13px;font-weight:600;color:var(--muted)}
 .field{display:flex;flex-direction:column;gap:6px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:14px}
@@ -143,7 +146,7 @@ li.done textarea.step-edit{color:var(--muted);text-decoration:line-through}
 .on-cal{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--accent);font-weight:600;margin:0}
 .on-cal svg{width:18px;height:18px}
 button > svg{width:18px;height:18px;flex:none;vertical-align:-3px;margin-right:4px}
-.tour{flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:28px;padding-inline:20px;padding-block:32px 40px}
+.tour{flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:28px;padding-inline:20px;padding-top:max(32px,env(safe-area-inset-top));padding-bottom:max(40px,env(safe-area-inset-bottom))}
 .tour-top{display:flex;justify-content:space-between;align-items:center}
 .tour-count{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.04em}
 .tour-body{display:flex;flex-direction:column;gap:18px}
@@ -194,10 +197,23 @@ ol.changes span{font-size:13.5px;line-height:1.5;color:var(--muted)}
 a.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border-radius:12px;font-weight:600;text-decoration:none;background:var(--accent);color:var(--accent-ink)}
 a.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .linkish{background:none;border:0;padding:0;min-height:auto;color:var(--accent);font-weight:600;text-decoration:underline;cursor:pointer}
-nav.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(460px,100%);background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom,0px);z-index:10}
+nav.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(var(--app-w),100%);background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom,0px);z-index:10}
 nav.tabs button{border:0;border-radius:0;background:transparent;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px 8px;min-height:60px;font-size:11.5px;font-weight:600}
 nav.tabs button svg{width:22px;height:22px}
 nav.tabs button[aria-current="page"]{color:var(--accent)}
+/* sign-in, sign-up and tour screens: no tab bar, so less bottom room; a centered card on bigger screens */
+.app[data-view="auth"] .screen{padding-bottom:max(40px,env(safe-area-inset-bottom))}
+.req{color:var(--err);margin-left:2px}
+@media (min-width:760px){
+  .app[data-view="auth"]{max-width:520px;min-height:0;margin:48px auto;border:1px solid var(--line);border-radius:24px;overflow:hidden}
+  .app[data-view="auth"] .screen{padding:40px 44px}
+  .app[data-view="main"] .screen{padding-inline:36px;padding-top:36px}
+  h1{font-size:32px}
+  .stat-grid{grid-template-columns:repeat(4,1fr)}
+}
+@media (min-width:1100px){
+  .app[data-view="main"] .list{display:grid;grid-template-columns:1fr 1fr;align-items:start}
+}
 @media (prefers-reduced-motion:reduce){.switch .track,.switch .track::after{transition:none}}
 </style>
 <style>body{margin:0}</style>
@@ -605,6 +621,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
       onclick: async () => { try { await SB.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin } }); } catch (e) { toast(authMsg(e)); } } });
   }
 
+  const reqLabel = (forId, text) => h("label", { for: forId }, text, h("span", { class:"req", "aria-hidden":"true", text:"*" }));
   function screenSplash(){
     return h("main", { class:"screen center" }, h("div", { class:"hero" }, logo(), h("p", { class:"wordmark" }, "First ", h("span", { text:"Step" })), h("p", { class:"sub", text:"Loading…" })));
   }
@@ -635,8 +652,8 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
         h("div", { class:"stack" }, h("button", { class:"primary block", type:"button", text:`Continue as ${p.name || "you"}`, onclick: goApp }), back));
     }
     const si = state.si || (state.si = { email: "", password: "" });
-    const email = h("input", { id:"si-email", type:"email", autocomplete:"email", maxlength:"120", value: si.email, placeholder:"you@gmail.com", oninput: e => { si.email = e.target.value; } });
-    const pass = h("input", { id:"si-pass", type:"password", autocomplete:"current-password", maxlength:"100", value: si.password, oninput: e => { si.password = e.target.value; } });
+    const email = h("input", { id:"si-email", "aria-required":"true", type:"email", autocomplete:"email", maxlength:"120", value: si.email, placeholder:"you@gmail.com", oninput: e => { si.email = e.target.value; } });
+    const pass = h("input", { id:"si-pass", "aria-required":"true", type:"password", autocomplete:"current-password", maxlength:"100", value: si.password, oninput: e => { si.password = e.target.value; } });
     const status = h("p", { class:"status", role:"status", text: si.msg || "" }); if (si.err) status.classList.add("err");
     const submit = async (ev) => {
       ev.preventDefault();
@@ -659,8 +676,8 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
       h("div", { class:"row" }, back),
       h("div", { class:"hero" }, logo(true), h("h1", { text:"Sign in" })),
       h("form", { class:"stack", onsubmit: submit, novalidate: true },
-        h("div", { class:"field" }, h("label", { for:"si-email", text:"Email" }), email),
-        h("div", { class:"field" }, h("label", { for:"si-pass", text:"Password" }), pass),
+        h("div", { class:"field" }, reqLabel("si-email", "Email"), email),
+        h("div", { class:"field" }, reqLabel("si-pass", "Password"), pass),
         status,
         h("button", { class:"primary block", type:"submit", text: si.busy ? "Signing in…" : "Sign in", disabled: !!si.busy }),
         h("div", { class:"row" }, h("button", { class:"quiet", type:"button", text:"Forgot password?", onclick: forgot }))),
@@ -668,13 +685,12 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
       h("p", { class:"fine" }, "New here? ", h("button", { class:"linkish", type:"button", text:"Create an account", onclick: () => { state.screen = "signup"; render(); } })));
   }
   function screenSignup(){
-    const su = state.su || (state.su = { name: "", email: "", password: "", focus: FOCUS[0], stakes: true });
-    const name = h("input", { id:"su-name", autocomplete:"given-name", maxlength:"60", value: su.name, placeholder:"Your name", oninput: e => { su.name = e.target.value; } });
-    const email = h("input", { id:"su-email", type:"email", autocomplete:"email", maxlength:"120", value: su.email, placeholder:"you@gmail.com", oninput: e => { su.email = e.target.value; } });
-    const pass = SB ? h("input", { id:"su-pass", type:"password", autocomplete:"new-password", maxlength:"100", value: su.password, placeholder:"At least 8 characters", oninput: e => { su.password = e.target.value; } }) : null;
+    const su = state.su || (state.su = { name: "", email: "", password: "", focus: FOCUS[0] });
+    const name = h("input", { id:"su-name", "aria-required":"true", autocomplete:"given-name", maxlength:"60", value: su.name, placeholder:"Your name", oninput: e => { su.name = e.target.value; } });
+    const email = h("input", { id:"su-email", "aria-required":"true", type:"email", autocomplete:"email", maxlength:"120", value: su.email, placeholder:"you@gmail.com", oninput: e => { su.email = e.target.value; } });
+    const pass = SB ? h("input", { id:"su-pass", "aria-required":"true", type:"password", autocomplete:"new-password", maxlength:"100", value: su.password, placeholder:"At least 8 characters", oninput: e => { su.password = e.target.value; } }) : null;
     const chips = h("fieldset", { class:"chips" }, h("legend", { class:"lbl", text:"What are you working toward right now?" }),
       FOCUS.map(f => { const inp = h("input", { type:"radio", name:"focus", value:f, checked: su.focus === f, onchange: () => { su.focus = f; } }); return h("label", null, inp, h("span", { text:f })); }));
-    const stakesIn = h("input", { type:"checkbox", id:"su-stakes", checked: su.stakes, role:"switch", onchange: e => { su.stakes = e.target.checked; } });
     const status = h("p", { class:"status err", role:"status", text: su.msg || "" });
     const create = async (ev) => {
       ev.preventDefault();
@@ -684,12 +700,11 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
       su.msg = "";
       if (!SB) {
         state.profile = { name: n.slice(0,60), email: em.slice(0,120), focus: su.focus, createdAt: Date.now() };
-        state.settings.stakes = stakesIn.checked;
         await saveProfile(); await saveSettings(); startTour(); return;
       }
       su.busy = true; render();
       const { data, error } = await SB.auth.signUp({ email: em, password: pass.value,
-        options: { data: { name: n.slice(0,60), focus: su.focus, stakes: stakesIn.checked }, emailRedirectTo: location.origin } });
+        options: { data: { name: n.slice(0,60), focus: su.focus }, emailRedirectTo: location.origin } });
       su.busy = false;
       if (error) { su.msg = authMsg(error); render(); return; }
       state.su = null;
@@ -700,11 +715,10 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
       h("div", { class:"row" }, h("button", { class:"quiet", type:"button", text:"Back", onclick: () => { state.screen = "welcome"; render(); } })),
       h("div", { class:"hero" }, logo(true), h("h1", { text:"Create your account" }), h("p", { class:"sub", text:"Your answers make the steps fit you." })),
       h("form", { class:"stack", onsubmit: create, novalidate: true },
-        h("div", { class:"field" }, h("label", { for:"su-name", text:"Name" }), name),
-        h("div", { class:"field" }, h("label", { for:"su-email", text:"Email" }), email),
-        pass ? h("div", { class:"field" }, h("label", { for:"su-pass", text:"Password" }), pass) : null,
+        h("div", { class:"field" }, reqLabel("su-name", "Name"), name),
+        h("div", { class:"field" }, reqLabel("su-email", "Email"), email),
+        pass ? h("div", { class:"field" }, reqLabel("su-pass", "Password"), pass) : null,
         chips,
-        h("div", { class:"group" }, settingRow("Show how long tasks have waited", "A short line with days waited and days until your deadline. You can change this later.", h("span", { class:"switch" }, stakesIn, h("span", { class:"track" })), "su-stakes")),
         status,
         h("button", { class:"primary block", type:"submit", text: su.busy ? "Creating…" : "Create account", disabled: !!su.busy })),
       googleButton(),
@@ -1034,6 +1048,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
     const a = document.activeElement;
     if (a && app.contains(a) && (a.classList.contains("step-edit") || a.id === "set-name" || a.id === "set-email")) return;
     let content;
+    app.dataset.view = ["splash","welcome","signin","signup","tour","confirm","newpass"].includes(state.screen) ? "auth" : "main";
     if (state.screen === "splash") content = [screenSplash()];
     else if (state.screen === "welcome") content = [screenWelcome()];
     else if (state.screen === "signin") content = [screenSignin()];
