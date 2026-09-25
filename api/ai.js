@@ -7,7 +7,8 @@ const FIRST_STEP_CEILING = 10; // the first step is never longer than this, what
 const clip = (v, n) => String(v ?? "").slice(0, n);
 const between = (v, lo, hi, d) => Number.isInteger(v) && v >= lo && v <= hi ? v : d;
 const firstStepMax = (b) => between(b.firstStepMax, 2, FIRST_STEP_CEILING, FIRST_STEP_CEILING);
-const stepCount = (b) => between(b.stepCount ?? b.maxSteps, 2, 10, 5); // maxSteps: older clients
+const MAX_STEPS = 100;
+const stepCount = (b) => between(b.stepCount ?? b.maxSteps, 2, MAX_STEPS, 5); // maxSteps: older clients
 
 async function signedIn(req) {
   const url = process.env.SUPABASE_URL, anon = process.env.SUPABASE_ANON_KEY;
@@ -38,7 +39,7 @@ Reply with JSON only: {"vague": true, "question": "...", "steps": 5} or {"vague"
     if (t.purpose) ctx.push(`They answered "${clip(t.purposeQ || "What's this for?", 120)}": ${clip(t.purpose, 200)}`);
     if (t.timing && t.timing.date) ctx.push(`Timing: ${clip(t.timing.label || "deadline", 60)} on ${clip(t.timing.date, 10)} (today is ${clip(b.today, 10)})`);
     else ctx.push("No deadline. Nothing external is forcing this.");
-    const done = Array.isArray(b.keepDone) ? b.keepDone.slice(0, 10).map(s => clip(s, 160)) : [];
+    const done = Array.isArray(b.keepDone) ? b.keepDone.slice(0, MAX_STEPS).map(s => clip(s, 160)) : [];
     if (done.length) ctx.push(`Already done: ${done.join("; ")}. Continue from there.`);
     const count = done.length ? Math.max(1, stepCount(b) - done.length) : stepCount(b);
     return `Break down a stalled, self-directed career or school task into concrete steps.
@@ -78,7 +79,8 @@ export default async function handler(req, res) {
   if (!prompt) return res.status(400).json({ code: "bad_request" });
 
   try {
-    const result = await askClaude(prompt);
+    // Long breakdowns need room: roughly 40 tokens per step.
+    const result = await askClaude(prompt, body.kind === "breakdown" ? Math.min(8000, 800 + 40 * stepCount(body)) : 800);
     if (body.kind === "breakdown") await enforceFirstStep(result, body);
     return res.status(200).json(result);
   } catch (e) {
@@ -87,7 +89,7 @@ export default async function handler(req, res) {
 }
 
 // Sends one prompt to Claude and returns the JSON object from its reply.
-async function askClaude(prompt) {
+async function askClaude(prompt, maxTokens = 800) {
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -95,7 +97,7 @@ async function askClaude(prompt) {
       "x-api-key": process.env.ANTHROPIC_API_KEY,
       "anthropic-version": "2023-06-01"
     },
-    body: JSON.stringify({ model: MODEL, max_tokens: 800, messages: [{ role: "user", content: prompt }] })
+    body: JSON.stringify({ model: MODEL, max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] })
   });
   if (r.status === 429) throw { status: 429, code: "rate_limited" };
   if (!r.ok) {
@@ -122,6 +124,6 @@ async function enforceFirstStep(result, b) {
     const split = await askClaude(buildPrompt({ kind: "split", title: t.title, purpose: t.purpose, stepText: first.text }));
     const smaller = Array.isArray(split.steps) ? split.steps.filter(s => s && s.text) : [];
     if (!smaller.length || !(Number(smaller[0].minutes) <= firstStepMax(b))) return;
-    result.steps = [...smaller, ...steps.slice(1)].slice(0, 10);
+    result.steps = [...smaller, ...steps.slice(1)].slice(0, MAX_STEPS);
   } catch { /* keep the original breakdown */ }
 }
