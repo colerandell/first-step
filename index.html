@@ -147,18 +147,9 @@ li.done textarea.step-edit{color:var(--muted);text-decoration:line-through}
 .on-cal svg{width:18px;height:18px}
 button > svg{width:18px;height:18px;flex:none;vertical-align:-3px;margin-right:4px}
 .tour{flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:28px;padding-inline:20px;padding-top:max(32px,env(safe-area-inset-top));padding-bottom:max(40px,env(safe-area-inset-bottom))}
-.tour-top{display:flex;justify-content:space-between;align-items:center}
-.tour-count{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.04em}
 .tour-body{display:flex;flex-direction:column;gap:18px}
-.tour-icon{width:88px;height:88px;border-radius:24px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
-.tour-icon svg{width:42px;height:42px}
 .tour-body h1{font-size:32px}
 .tour-body .sub{font-size:16.5px;line-height:1.55}
-.tour-tip{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;font-size:14px;color:var(--muted);margin:0}
-.tour-tip b{color:var(--ink)}
-.dots{display:flex;gap:8px;justify-content:center}
-.dots span{width:8px;height:8px;border-radius:50%;background:var(--line)}
-.dots span.on{background:var(--accent);width:22px;border-radius:99px}
 .start{display:flex;flex-direction:column;gap:14px}
 .start ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;color:var(--muted)}
 .start ol b{color:var(--ink)}
@@ -201,6 +192,19 @@ nav.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(v
 nav.tabs button{border:0;border-radius:0;background:transparent;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px 8px;min-height:60px;font-size:11.5px;font-weight:600}
 nav.tabs button svg{width:22px;height:22px}
 nav.tabs button[aria-current="page"]{color:var(--accent)}
+/* first-run guide */
+ol.how{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;counter-reset:how}
+ol.how li{counter-increment:how;display:grid;grid-template-columns:30px 1fr;gap:10px;align-items:start;color:var(--muted);line-height:1.45}
+ol.how li::before{content:counter(how);width:26px;height:26px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:13px;display:grid;place-items:center}
+ol.how b{color:var(--ink)}
+.guide{background:var(--accent-soft);border:1px solid var(--accent);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.guide .count{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.guide .title{margin:0;font-weight:600;font-size:16px}
+.guide p{margin:0;font-size:14px;line-height:1.5}
+.guide .row{margin-top:6px}
+nav.tabs button{position:relative}
+nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% + 9px);width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--surface)}
+.guide ul{margin:2px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:2px;font-size:14px;line-height:1.45}
 /* sign-in, sign-up and tour screens: no tab bar, so less bottom room; a centered card on bigger screens */
 .app[data-view="auth"] .screen{padding-bottom:max(40px,env(safe-area-inset-bottom))}
 .req{color:var(--err);margin-left:2px}
@@ -527,37 +531,65 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
   async function addPreset(pr){
     state.extraToday = 0; state.todayDone = null; stats.added++; saveStats();
     stats.added++; saveStats();
+    if (state.guide) state.guide = "done";
     await persist(presetTask(pr));
     state.capture = { phase: "idle" }; state.tab = "today"; render(); window.scrollTo(0,0);
   }
-  // ---------- first-run tour ----------
-  const TOUR = [
-    { icon: "add", title: "Add the task you keep avoiding", body: "Vague is fine. \"Work on portfolio\" or \"start applications\" is exactly what this is for.", tip: "Tap <b>Add</b> at the bottom to capture one." },
-    { icon: "chat", title: "Answer one quick question", body: "If the task is vague, First Step asks what it's for and whether a date is driving it. That's how the steps end up specific to you.", tip: "No deadline? Just skip the date." },
-    { icon: "today", title: "Do one step a day", body: "The <b>Today</b> tab shows a single small step, never your whole list. The first step always takes 10 minutes or less.", tip: "<b>Done</b> to finish it, <b>Still too big</b> to shrink it, <b>Not today</b> to set it aside." },
-    { icon: "tasks", title: "Fix anything", body: "Open <b>Tasks</b> to see every step. Tap any step to rewrite it, or regenerate the ones you haven't done.", tip: "<b>Settings</b> lets you turn off the \"days waited\" line and pick your step size." }
-  ];
-  ICONS.chat = '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M9 10h6M9 14h4"/>';
-  function startTour(){ state.screen = "tour"; state.tourStep = 0; render(); window.scrollTo(0,0); }
+  // ---------- first-run guide ----------
+  // A welcome screen, then a walk-through inside the real app while the user adds their first task.
+  // state.guide: null, "add" (adding the task) or "done" (showing where the first step went).
+  function startTour(){ state.screen = "tour"; state.guide = null; render(); window.scrollTo(0,0); }
+  function markToured(){ lsSet(LS.signedOut, null); if (state.profile && !state.profile.toured) { state.profile = { ...state.profile, toured: true }; saveProfile(); } }
   function finishTour(tab){
-    lsSet(LS.signedOut, null);
-    if (state.profile && !state.profile.toured) { state.profile = { ...state.profile, toured: true }; saveProfile(); }
+    markToured(); state.guide = null;
     state.screen = "app"; state.tab = tab || (state.tasks.size ? "today" : "add"); render(); window.scrollTo(0,0);
   }
+  function startGuide(){
+    markToured(); state.guide = "add"; state.capture = { phase: "idle" };
+    state.screen = "app"; state.tab = "add"; render(); window.scrollTo(0,0);
+  }
   function screenTour(){
-    const i = state.tourStep || 0, t = TOUR[i], last = i === TOUR.length - 1;
-    const body = h("p", { class:"sub" }); body.innerHTML = t.body;
-    const tip = h("p", { class:"tour-tip" }); tip.innerHTML = t.tip;
+    const again = state.tasks.size > 0;
+    const how = h("ol", { class:"how" });
+    how.innerHTML = "<li><span><b>Add a task</b> you keep putting off. Vague is fine.</span></li><li><span><b>Answer a quick question</b> so the steps fit you.</span></li><li><span><b>Do one small step a day.</b> The first one takes 10 minutes or less.</span></li>";
     return h("main", { class:"tour", "aria-label":"How First Step works" },
-      h("div", { class:"tour-top" },
-        h("span", { class:"tour-count", text:`How it works · ${i+1} of ${TOUR.length}` }),
-        h("button", { class:"quiet", type:"button", text:"Skip", onclick: () => finishTour() })),
-      h("div", { class:"tour-body" }, h("div", { class:"tour-icon" }, svg(ICONS[t.icon])), h("h1", { text: t.title }), body, tip),
+      h("div", { class:"tour-body" },
+        logo(),
+        h("h1", { text: again ? "How First Step works" : `Welcome${firstName() ? ", " + firstName() : ""}` }),
+        h("p", { class:"sub", text:"First Step turns a task you keep putting off into one small step a day." }),
+        how,
+        h("p", { class:"sub", text: again ? "Want to add a task together? It takes about a minute." : "Let's set up your first task together. It takes about a minute." })),
       h("div", { class:"stack" },
-        h("div", { class:"dots", "aria-hidden":"true" }, TOUR.map((_, k) => h("span", { class: k === i ? "on" : "" }))),
-        h("button", { class:"primary block", type:"button", text: last ? (state.tasks.size ? "Back to the app" : "Add my first task") : "Next",
-          onclick: () => { if (last) finishTour(); else { state.tourStep = i + 1; render(); } } }),
-        i > 0 ? h("button", { class:"quiet", type:"button", text:"Back", onclick: () => { state.tourStep = i - 1; render(); } }) : null));
+        h("button", { class:"primary block", type:"button", text: again ? "Add a task with me" : "Add my first task", onclick: startGuide }),
+        h("button", { class:"quiet", type:"button", text: again ? "Back to the app" : "Skip for now", onclick: () => finishTour() })));
+  }
+  function guideBox(count, title, text, action, list, note){
+    return h("aside", { class:"guide", "aria-label":"Setup guide" },
+      h("span", { class:"count", text: count }), h("p", { class:"title", text: title }), h("p", { text: text }),
+      list ? h("ul", null, list.map(([b, rest]) => h("li", null, h("b", { text: b }), " " + rest))) : null,
+      note ? h("p", { text: note }) : null, action);
+  }
+  function guideBanner(){
+    if (state.screen !== "app" || !state.guide) return null;
+    const skip = h("div", { class:"row" }, h("button", { class:"quiet", type:"button", text:"Skip the guide", onclick: () => { state.guide = null; render(); } }));
+    if (state.guide === "add" && state.tab === "add") {
+      const c = state.capture;
+      if (c.phase === "idle" || c.phase === "checking")
+        return guideBox("Step 1 of 3", "Add a task", "Type something you keep putting off, like \"update my resume,\" and tap Next. Or tap one of the examples.", skip);
+      return guideBox("Step 2 of 3", c.vague ? "Answer a quick question" : "Add a date if there is one",
+        (c.vague ? "Your answer makes the steps fit you. " : "") + "If nothing is due, leave the date empty. Then tap Break it down.", skip);
+    }
+    if (state.guide === "done" && (state.tab === "today" || state.tab === "tasks")) {
+      const gotIt = h("div", { class:"row" }, h("button", { class:"primary", type:"button", text:"Got it", onclick: () => { state.guide = null; render(); } }));
+      const hasStep = [...state.tasks.values()].some(t => nextStep(t));
+      if (state.tab === "today" && hasStep)
+        return guideBox("Step 3 of 3", "Here's your first step", "Come back to Today each day for one small step. Under it, tap:", gotIt,
+          [["Done", "when you finish it"], ...(sample ? [["Still too big", "to split it into smaller steps"]] : []), ["Not today", "to save it for tomorrow"]],
+          "To see or edit all your steps, tap Tasks at the bottom.");
+      if (state.tab === "tasks" && !hasStep)
+        return guideBox("Step 3 of 3", "Add your first step", "Type the very first thing you'd do in the box under your task, then tap Add. It will show up on the Today tab.", gotIt);
+    }
+    return null;
   }
 
   // ---------- accounts ----------
@@ -891,17 +923,17 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
         h("p", { class:"qtitle", text: `“${c.title}”` }),
         c.vague ? h("div", { class:"field" }, h("label", { for:"q-purpose", text: c.question }), purpose) : null,
         h("div", { class:"field" },
-          h("span", { class:"lbl", id:"q-timing", text:"Is anything driving the timing? Skip if not." }),
+          h("span", { class:"lbl", id:"q-timing", text:"Is anything due? Leave this blank if not." }),
           h("div", { class:"q-grid", role:"group", "aria-labelledby":"q-timing" },
             h("div", { class:"field" }, h("label", { for:"q-date", text:"Date" }), date),
-            h("div", { class:"field" }, h("label", { for:"q-label", text:"What happens then" }), label))),
+            h("div", { class:"field" }, h("label", { for:"q-label", text:"What's due" }), label))),
         h("button", { class:"primary block", type:"button", text: gen ? "Writing steps…" : "Break it down", disabled: gen, onclick: () => submitCapture(false) }),
         h("div", { class:"row" },
           h("button", { class:"quiet", type:"button", text:"Skip questions", disabled: gen, onclick: () => submitCapture(true) }),
           h("button", { class:"quiet", type:"button", text:"Cancel", disabled: gen, onclick: () => { state.capture = { phase: "idle" }; render(); } })));
     }
     const firstTime = state.tasks.size === 0;
-    return [h("h1", { text: firstTime ? "Add your first task" : "Add a task" }), h("p", { class:"sub", text: firstTime ? "Pick something that's been sitting on your list. Vague is fine." : "Vague is fine. That's what this is for." }), card];
+    return [h("h1", { text: firstTime ? "Add your first task" : "Add a task" }), state.guide ? null : h("p", { class:"sub", text: firstTime ? "Pick something that's been sitting on your list. Vague is fine." : "Vague is fine. That's what this is for." }), card];
   }
   async function submitCapture(skip){
     const c = state.capture;
@@ -919,6 +951,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
     } else { msg = "Added. AI steps aren't set up yet, so add your first step in Tasks."; err = true; }
     state.extraToday = 0; state.todayDone = null;
     stats.added++; saveStats();
+    if (state.guide) state.guide = "done";
     await persist(t);
     state.capture = { phase: "idle", msg, err };
     state.tab = err ? "tasks" : "today"; render();
@@ -1021,7 +1054,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
         settingRow("Working toward", "Shapes how steps are written.", focusSel, "set-focus"),
         settingRow("Storage", SB ? "Synced across your devices" : "Saved in this browser only", h("span", { class:"pill", text: SB ? "Synced" : "This browser" })))),
       h("section", { class:"section" }, h("h2", { text:"Help" }), h("div", { class:"group" },
-        settingRow("How First Step works", "A 4-screen walkthrough of the app.", h("button", { type:"button", text:"Show me", onclick: startTour })),
+        settingRow("How First Step works", "A quick walkthrough. You can add a task along the way.", h("button", { type:"button", text:"Show me", onclick: startTour })),
         settingRow("Behind the build", "The research, the success metrics, and what changed.", h("button", { type:"button", text:"Open", onclick: openBuild })))),
       danger,
       h("p", { class:"fine", style:"text-align:center", text:"First Step · v0.7" })
@@ -1040,7 +1073,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
   function nav(){
     const tabs = [["today","Today"],["add","Add"],["tasks","Tasks"],["settings","Settings"]];
     return h("nav", { class:"tabs", "aria-label":"Main" }, tabs.map(([id, label]) =>
-      h("button", { type:"button", "aria-current": state.tab === id ? "page" : null, onclick: () => { state.tab = id; state.confirmDelete = false; if (id !== "add" && state.capture.phase === "idle") state.capture.msg = ""; render(); window.scrollTo(0,0); } }, svg(ICONS[id]), label)));
+      h("button", { type:"button", class: state.guide === "done" && state.tab === "today" && id === "tasks" ? "hint" : null, "aria-current": state.tab === id ? "page" : null, onclick: () => { state.tab = id; state.confirmDelete = false; if (id !== "add" && state.capture.phase === "idle") state.capture.msg = ""; render(); window.scrollTo(0,0); } }, svg(ICONS[id]), label)));
   }
   function render(){
     const app = $("app");
@@ -1059,7 +1092,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
     else if (state.screen === "build") content = [screenBuild()];
     else {
       const body = state.tab === "add" ? tabAdd() : state.tab === "tasks" ? tabTasks() : state.tab === "settings" ? tabSettings() : tabToday();
-      content = [h("main", { class:"screen" }, body, toastMsg ? h("p", { class:"status err", role:"status", text: toastMsg }) : null), nav()];
+      content = [h("main", { class:"screen" }, guideBanner(), body, toastMsg ? h("p", { class:"status err", role:"status", text: toastMsg }) : null), nav()];
     }
     const focusId = a && a.id && app.contains(a) ? a.id : null;
     app.replaceChildren(...content);
