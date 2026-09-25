@@ -256,7 +256,8 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
   .stat-grid{grid-template-columns:repeat(4,1fr)}
 }
 @media (min-width:1100px){
-  .app[data-view="main"] .list{display:grid;grid-template-columns:1fr 1fr;align-items:start}
+  .masonry{display:flex;gap:12px;align-items:flex-start}
+  .masonry .col{flex:1;min-width:0;display:flex;flex-direction:column;gap:12px}
 }
 @media (prefers-reduced-motion:reduce){.switch .track,.switch .track::after{transition:none}}
 </style>
@@ -1091,6 +1092,23 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
       h("div", { class:"add-step" }, input, h("button", { type:"button", text:"Add", onclick: submitStep })),
       (sample && !isDone(t)) ? h("div", { class:"ai-zone" }, h("span", { class:"lbl" }, svg(SPARK), "AI can do this for you"), h("div", { class:"row" }, h("button", { class:"quiet", type:"button", text: regenBusy ? "Rewriting…" : "Regenerate unfinished steps", disabled: regenBusy, onclick: () => regenerate(t) }))) : null);
   }
+  // Big screens show tasks in two columns, masonry style: each task goes under whichever column
+  // is shorter so there are no gaps. Phones get one column.
+  const WIDE = matchMedia("(min-width:1100px)");
+  function taskGrid(tasks){
+    if (!WIDE.matches) return h("div", { class:"list" }, tasks.map(renderTask));
+    const cols = [h("div", { class:"col" }), h("div", { class:"col" })];
+    tasks.forEach((t, i) => { const a = renderTask(t); a.dataset.order = i; cols[i % 2].append(a); });
+    return h("div", { class:"masonry" }, cols);
+  }
+  // Runs after the grid is on the page, when real heights are known.
+  function layoutMasonry(m){
+    const cols = [...m.children], GAP = 12;
+    const arts = [...m.querySelectorAll("article")].sort((a, b) => a.dataset.order - b.dataset.order);
+    const heights = arts.map(a => a.offsetHeight), used = [0, 0];
+    arts.forEach((a, i) => { const c = used[0] <= used[1] ? 0 : 1; cols[c].append(a); used[c] += heights[i] + GAP; });
+  }
+  WIDE.addEventListener("change", () => { if (state.screen === "app") render(); });
   function tabTasks(){
     const v = visibleTasks(), active = v.filter(t => !isDone(t)), finished = v.filter(isDone);
     const out = [h("h1", { text:"Tasks" }), h("p", { class:"sub", text: `${plural(active.length, "open task")}${finished.length ? ` · ${finished.length} finished` : ""}. Tap any step to edit it.` })];
@@ -1103,8 +1121,8 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
         h("li", { text:"Rewrites the steps you haven't done (Regenerate)." })),
       h("p", { text:"Everything else is you: edit any step, add your own, check them off. A step you edit loses its AI mark." })));
     if (state.capture.msg && state.capture.err) out.push(h("p", { class:"status err", role:"status", text: state.capture.msg }));
-    out.push(h("div", { class:"list" }, active.map(renderTask)));
-    if (finished.length) out.push(h("h2", { text:"Finished" }), h("div", { class:"list" }, finished.map(renderTask)));
+    out.push(taskGrid(active));
+    if (finished.length) out.push(h("h2", { text:"Finished" }), taskGrid(finished));
     if (!v.length) out.push(h("div", { class:"card" }, h("p", { class:"muted", text:"No tasks yet. Everything you add shows up here with all its steps." }), h("div", { class:"row" }, h("button", { class:"primary", type:"button", text:"Add your first task", onclick: () => { state.tab = "add"; render(); } }))));
     return out;
   }
@@ -1251,6 +1269,7 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
     const focusId = a && a.id && app.contains(a) ? a.id : null;
     app.replaceChildren(...content);
     app.querySelectorAll(".wheel").forEach(w => w.syncWheel && w.syncWheel());
+    app.querySelectorAll(".masonry").forEach(layoutMasonry);
     if (focusId) { const el = $(focusId); if (el) el.focus(); }
   }
 
