@@ -118,6 +118,9 @@ li.done textarea.step-edit{color:var(--muted);text-decoration:line-through}
 .add-step input{min-height:40px}
 .add-step button{min-height:40px;white-space:nowrap}
 .q-grid{display:grid;grid-template-columns:150px 1fr;gap:12px}
+.due-head{display:flex;justify-content:space-between;align-items:center}
+.linkish.quiet-link{color:var(--muted);font-weight:500;font-size:13px}
+.linkish.add-due{align-self:flex-start;font-size:14px;text-decoration:none;min-height:32px}
 @media (max-width:400px){.q-grid{grid-template-columns:1fr}}
 .qtitle{font-weight:600;margin:0;font-size:17px}
 
@@ -631,8 +634,8 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
       const c = state.capture;
       if (c.phase === "idle" || c.phase === "checking")
         return guideBox("Step 1 of 3", "Add a task", "Type something you keep putting off, like \"update my resume,\" and tap Next. Or tap one of the examples.", skip);
-      return guideBox("Step 2 of 3", c.vague ? "Answer a quick question" : "Add a date if there is one",
-        (c.vague ? "Your answer makes the steps fit you. " : "") + "If nothing is due, leave the date empty." + (sample ? " Pick how many steps you want, then tap Break it down." : " Then tap Break it down."), skip);
+      return guideBox("Step 2 of 3", c.vague ? "Answer a quick question" : "Choose how many steps",
+        (c.vague ? "Your answer makes the steps fit you. " : "") + (sample ? "Pick how many steps you want, then tap Break it down." : "Then tap Break it down."), skip);
     }
     if (state.guide === "done" && (state.tab === "today" || state.tab === "tasks")) {
       const gotIt = h("div", { class:"row" }, h("button", { class:"primary", type:"button", text:"Got it", onclick: () => { state.guide = null; render(); } }));
@@ -1001,7 +1004,7 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
         if (sample) { try { const r = await sample.json(clarifyPrompt(title), { modelTier: "quick" }); if (r && typeof r.vague === "boolean") q = { vague: r.vague, question: String(r.question||"").slice(0,120), rec: inRange(r.steps, STEP_COUNTS, null) }; } catch {} }
         state.capture = { phase: "questions", title, vague: q.vague, question: q.vague ? (q.question || "What's this for?") : "", rec: q.rec, steps: q.rec || state.settings.maxSteps };
         render();
-        const first = $("q-purpose") || $("q-date"); if (first) first.focus();
+        const first = $("q-purpose"); if (first) first.focus();
       };
       input.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); go(); } });
       put(card, 
@@ -1020,11 +1023,15 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
       put(card, 
         h("p", { class:"qtitle", text: `“${c.title}”` }),
         c.vague ? h("div", { class:"field" }, h("label", { for:"q-purpose", text: c.question }), purpose) : null,
-        h("div", { class:"field" },
-          h("span", { class:"lbl", id:"q-timing", text:"Is anything due? Leave this blank if not." }),
+        // A deadline is optional, so it stays tucked away behind a small link until someone wants it.
+        (c.dueOpen || c.date || c.label) ? h("div", { class:"field" },
+          h("div", { class:"due-head" },
+            h("span", { class:"lbl", id:"q-timing", text:"Deadline" }),
+            h("button", { class:"linkish quiet-link", type:"button", text:"Remove", disabled: gen, onclick: () => { Object.assign(c, { dueOpen: false, date: "", label: "" }); render(); } })),
           h("div", { class:"q-grid", role:"group", "aria-labelledby":"q-timing" },
             h("div", { class:"field" }, h("label", { for:"q-date", text:"Date" }), date),
-            h("div", { class:"field" }, h("label", { for:"q-label", text:"What's due" }), label))),
+            h("div", { class:"field" }, h("label", { for:"q-label", text:"What's due" }), label)))
+        : h("button", { class:"linkish add-due", type:"button", disabled: gen, onclick: () => { c.dueOpen = true; render(); const d = $("q-date"); if (d) d.focus(); } }, "+ Add a deadline"),
         sample ? h("div", { class:"field" },
           h("span", { class:"lbl", id:"q-steps-l", text:"How many steps?" }),
           h("div", { class:"steps-pick" },
