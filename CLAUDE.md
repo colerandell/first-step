@@ -6,7 +6,7 @@ First Step breaks vague career and school tasks ("update my portfolio", "apply t
 
 **The first step of any task must always take 10 minutes or less.** Any change to prompts, settings or step handling has to keep this true.
 
-- `api/ai.js` enforces it on the server. `FIRST_STEP_CEILING` is 10, and the user's "First step size" setting can only lower it (5 or 10). If Claude returns a breakdown whose step 1 is over the limit, `enforceFirstStep` asks Claude to split that step and puts the smaller steps in its place.
+- `api/ai.js` enforces it on the server. `FIRST_STEP_CEILING` is 10, and the user's "First step size" setting can only lower it (2 to 10 minutes, picked on a scroll wheel). If Claude returns a breakdown whose step 1 is over the limit, `enforceFirstStep` asks Claude to split that step and puts the smaller steps in its place.
 - The "Still too big" split prompt asks for a first step of 5 minutes or less.
 - Hand-written sample steps in `index.html` follow the same rule.
 
@@ -31,5 +31,8 @@ Environment variables (set in Vercel): `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` (o
 
 - Keep the API key and prompts server-side. Never call Anthropic from `index.html`.
 - `api/ai.js` returns errors as `{ code }` (`not_configured`, `not_signed_in`, `rate_limited`, `upstream_error`, `invalid_json`, `bad_request`). `aiErr` in `index.html` maps these codes to messages, so keep them in sync.
-- The client (`cleanSteps` in `index.html`) clamps minutes and trims the list to the user's "Steps per task" setting.
+- Step count: when adding a task the user picks how many steps (2 to 10) on a scroll wheel. The `clarify` reply suggests a count (`steps`), the "Default steps" setting is the fallback, and the choice is saved on the task as `stepCount` so Regenerate keeps it. The breakdown prompt asks for exactly that many; a first-step split can add one more.
+- Number pickers use the `wheel()` helper in `index.html` (scroll, tap, mouse wheel or arrow keys).
+- The client (`cleanSteps` in `index.html`) clamps minutes and caps a list at 10 steps.
+- Keep the portfolio iteration log (a Google Doc in the owner's Drive, "First Step – Iteration Log") up to date: add an entry for each shipped change with what changed and why.
 - No test suite or local dev server is set up. `vercel dev` runs the app with its functions locally.

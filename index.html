@@ -129,6 +129,15 @@ li.done textarea.step-edit{color:var(--muted);text-decoration:line-through}
 .setting .name{font-weight:600}
 .setting .desc{font-size:13px;color:var(--muted)}
 .setting select{width:auto;min-width:120px}
+.wheel-wrap{position:relative;flex:none;width:108px;height:108px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.wheel-wrap::before{content:"";position:absolute;left:5px;right:5px;top:36px;height:36px;border-radius:8px;background:var(--accent-soft);pointer-events:none}
+.wheel-wrap:has(.wheel:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.wheel{position:relative;height:100%;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;scrollbar-width:none;padding-block:36px;outline:none;-webkit-mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent);mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent)}
+.wheel::-webkit-scrollbar{display:none}
+.wheel div{height:36px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;font-size:15px;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums;cursor:pointer;user-select:none}
+.wheel div.on{color:var(--accent);font-weight:600}
+.steps-pick{display:flex;gap:14px;align-items:center}
+.steps-pick .fine{font-size:13.5px;line-height:1.45}
 .switch{position:relative;flex:none;width:50px;height:30px}
 .switch input{position:absolute;inset:0;opacity:0;margin:0;width:100%;height:100%;min-height:0;cursor:pointer;z-index:1}
 .switch .track{position:absolute;inset:0;border-radius:99px;background:var(--line);transition:background .15s}
@@ -177,9 +186,15 @@ ol.changes span{font-size:13.5px;line-height:1.5;color:var(--muted)}
 .ai-zone{border-top:1px dashed var(--line);padding-top:10px;display:flex;flex-direction:column;gap:4px}
 .ai-zone .lbl{display:flex;align-items:center;gap:6px;color:var(--accent)}
 .ai-zone .lbl svg{width:14px;height:14px}
-.ai-card{background:var(--accent-soft);border:1px solid transparent;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:8px}
-.ai-card h3{margin:0;font-size:15px;display:flex;align-items:center;gap:6px;color:var(--accent)}
-.ai-card h3 svg{width:16px;height:16px}
+.ai-card{background:var(--accent-soft);border:1px solid transparent;border-radius:16px;padding:0 16px}
+.ai-card[open]{padding-bottom:16px}
+.ai-card summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:6px;min-height:48px;font-size:15px;font-weight:600;color:var(--accent)}
+.ai-card summary::-webkit-details-marker{display:none}
+.ai-card summary svg{width:16px;height:16px}
+.ai-card summary .chev{margin-left:auto;width:18px;height:18px;transition:transform .15s}
+.ai-card[open] summary .chev{transform:rotate(180deg)}
+.ai-card summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+.ai-card ul + p{margin-top:8px}
 .ai-card ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:13.5px;line-height:1.45;color:var(--ink)}
 .ai-card p{margin:0;font-size:13px;color:var(--muted)}
 .presets{display:flex;flex-direction:column;gap:8px}
@@ -233,6 +248,10 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
   const hostTheme = root.getAttribute("data-theme");
 
   const DEFAULT_SETTINGS = { stakes: true, askQuestions: true, firstStepMax: 10, maxSteps: 5, noDeadlineFirst: true, theme: "system", calendar: true };
+  // Step counts run 2 to 10, and the first step is never longer than 10 minutes.
+  const STEP_COUNTS = [2,3,4,5,6,7,8,9,10], FIRST_STEP_MINUTES = [2,3,4,5,6,7,8,9,10];
+  const inRange = (v, list, d) => list.includes(v) ? v : d;
+  function normSettings(st){ st.maxSteps = inRange(st.maxSteps, STEP_COUNTS, 5); st.firstStepMax = inRange(st.firstStepMax, FIRST_STEP_MINUTES, 10); return st; }
   const FOCUS = ["School", "Job search", "Career growth", "Returning to work", "Something else"];
 
   const state = {
@@ -323,19 +342,19 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
   }
 
   // ---------- storage ----------
-  const LS = { tasks: "first-step-tasks", settings: "first-step-settings", profile: "first-step-profile", signedOut: "first-step-signed-out", more: "first-step-more" };
+  const LS = { tasks: "first-step-tasks", settings: "first-step-settings", profile: "first-step-profile", signedOut: "first-step-signed-out", more: "first-step-more", aiCard: "first-step-ai-card" };
   const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
   const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
   function loadLocal(){
     try { const raw = lsGet(LS.tasks); if (raw) for (const t of JSON.parse(raw)) state.tasks.set(t.id, t); } catch {}
-    try { const s = lsGet(LS.settings); if (s) state.settings = { ...DEFAULT_SETTINGS, ...JSON.parse(s) }; } catch {}
+    try { const s = lsGet(LS.settings); if (s) state.settings = normSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(s) }); } catch {}
     try { const p = lsGet(LS.profile); if (p) state.profile = JSON.parse(p); } catch {}
   }
   function saveLocal(){ lsSet(LS.tasks, JSON.stringify([...state.tasks.values()])); lsSet(LS.settings, JSON.stringify(state.settings)); lsSet(LS.profile, state.profile ? JSON.stringify(state.profile) : null); }
   async function writeDoc(id, body){ if (state.mode === "db") { try { await col.doc(id).set(JSON.parse(JSON.stringify(body))); return true; } catch { return false; } } saveLocal(); return true; }
   async function persist(task){ state.tasks.set(task.id, task); render(); if (!(await writeDoc(task.id, task))) toast("Couldn't save that change. Try again in a moment."); }
   async function removeTask(id){ state.tasks.delete(id); render(); if (state.mode === "db") { try { await col.doc(id).delete(); } catch {} } else saveLocal(); }
-  async function saveSettings(){ applyTheme(); render(); await writeDoc("settings", { kind: "settings", ...state.settings }); }
+  async function saveSettings(quiet){ applyTheme(); if (!quiet) render(); await writeDoc("settings", { kind: "settings", ...state.settings }); }
   async function saveProfile(){ await writeDoc("profile", { kind: "profile", ...state.profile }); }
   let toastMsg = "";
   function toast(m){ toastMsg = m; render(); setTimeout(() => { if (toastMsg === m) { toastMsg = ""; render(); } }, 5000); }
@@ -346,7 +365,7 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
   function clarifyPrompt(title){ return { kind: "clarify", title, focus: focusOf() }; }
   function breakdownPrompt(t, keepDone){
     const S = state.settings, d = new Date();
-    return { kind: "breakdown", focus: focusOf(), maxSteps: S.maxSteps, firstStepMax: S.firstStepMax,
+    return { kind: "breakdown", focus: focusOf(), stepCount: t.stepCount || S.maxSteps, firstStepMax: S.firstStepMax,
       today: `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`,
       task: { title: t.title, purposeQ: t.purposeQ, purpose: t.purpose, timing: t.timing },
       keepDone: (keepDone || []).map(x => x.text) };
@@ -363,7 +382,7 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
   function cleanSteps(res, max){
     const arr = Array.isArray(res?.steps) ? res.steps : [];
     return arr.map(s => ({ id: uid(), text: String(s.text||"").trim().slice(0,160), minutes: Math.max(1, Math.min(240, Math.round(Number(s.minutes)||10))), done:false, ai:true }))
-              .filter(s => s.text).slice(0, max || state.settings.maxSteps);
+              .filter(s => s.text).slice(0, max || 10);
   }
   function aiErr(e){
     const c = e && e.code;
@@ -580,7 +599,7 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
       if (c.phase === "idle" || c.phase === "checking")
         return guideBox("Step 1 of 3", "Add a task", "Type something you keep putting off, like \"update my resume,\" and tap Next. Or tap one of the examples.", skip);
       return guideBox("Step 2 of 3", c.vague ? "Answer a quick question" : "Add a date if there is one",
-        (c.vague ? "Your answer makes the steps fit you. " : "") + "If nothing is due, leave the date empty. Then tap Break it down.", skip);
+        (c.vague ? "Your answer makes the steps fit you. " : "") + "If nothing is due, leave the date empty." + (sample ? " Pick how many steps you want, then tap Break it down." : " Then tap Break it down."), skip);
     }
     if (state.guide === "done" && (state.tab === "today" || state.tab === "tasks")) {
       const gotIt = h("div", { class:"row" }, h("button", { class:"primary", type:"button", text:"Got it", onclick: () => { state.guide = null; render(); } }));
@@ -612,7 +631,7 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
     state.tasks.clear(); state.profile = null; state.settings = { ...DEFAULT_SETTINGS };
     for (const row of rows || []) {
       const v = row.data; if (!v) continue;
-      if (row.id === "settings") { const { kind, ...rest } = v; state.settings = { ...DEFAULT_SETTINGS, ...rest }; if (![3,5,10].includes(state.settings.maxSteps)) state.settings.maxSteps = 5; continue; }
+      if (row.id === "settings") { const { kind, ...rest } = v; state.settings = normSettings({ ...DEFAULT_SETTINGS, ...rest }); continue; }
       if (row.id === "profile") { const { kind, ...rest } = v; state.profile = rest; continue; }
       if (Array.isArray(v.steps)) state.tasks.set(row.id, { ...v, id: row.id, steps: v.steps.map(x => ({ ...x })) });
     }
@@ -911,9 +930,9 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
         const title = input.value.trim(); if (!title) { input.focus(); return; }
         if (!state.settings.askQuestions) { state.capture = { phase:"questions", title, vague:false, question:"", skipAll:true }; return submitCapture(true); }
         state.capture = { phase: "checking", title }; render();
-        let q = { vague: true, question: "What's this for?" };
-        if (sample) { try { const r = await sample.json(clarifyPrompt(title), { modelTier: "quick" }); if (r && typeof r.vague === "boolean") q = { vague: r.vague, question: String(r.question||"").slice(0,120) }; } catch {} }
-        state.capture = { phase: "questions", title, vague: q.vague, question: q.vague ? (q.question || "What's this for?") : "" };
+        let q = { vague: true, question: "What's this for?", rec: null };
+        if (sample) { try { const r = await sample.json(clarifyPrompt(title), { modelTier: "quick" }); if (r && typeof r.vague === "boolean") q = { vague: r.vague, question: String(r.question||"").slice(0,120), rec: inRange(r.steps, STEP_COUNTS, null) }; } catch {} }
+        state.capture = { phase: "questions", title, vague: q.vague, question: q.vague ? (q.question || "What's this for?") : "", rec: q.rec, steps: q.rec || state.settings.maxSteps };
         render();
         const first = $("q-purpose") || $("q-date"); if (first) first.focus();
       };
@@ -939,6 +958,11 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
           h("div", { class:"q-grid", role:"group", "aria-labelledby":"q-timing" },
             h("div", { class:"field" }, h("label", { for:"q-date", text:"Date" }), date),
             h("div", { class:"field" }, h("label", { for:"q-label", text:"What's due" }), label))),
+        sample ? h("div", { class:"field" },
+          h("span", { class:"lbl", id:"q-steps-l", text:"How many steps?" }),
+          h("div", { class:"steps-pick" },
+            wheel("q-steps", STEP_COUNTS, c.steps || state.settings.maxSteps, n => `${n} steps`, v => { c.steps = v; }, "q-steps-l"),
+            h("p", { class:"fine", text: (c.rec ? `Suggested: ${c.rec} for this task. ` : "") + "Fewer steps means each one is bigger." }))) : null,
         h("button", { class:"primary block", type:"button", text: gen ? "Writing steps…" : "Break it down", disabled: gen, onclick: () => submitCapture(false) }),
         h("div", { class:"row" },
           h("button", { class:"quiet", type:"button", text:"Skip questions", disabled: gen, onclick: () => submitCapture(true) }),
@@ -953,7 +977,8 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
       id: uid(), title: c.title.slice(0,200),
       purposeQ: c.vague ? c.question : "", purpose: !skip ? (c.purpose || "").trim().slice(0,200) : "",
       timing: !skip && c.date ? { date: c.date, label: (c.label || "").trim().slice(0,60) || "Deadline" } : null,
-      createdAt: Date.now(), lastProgressAt: Date.now(), snoozedUntil: 0, steps: []
+      createdAt: Date.now(), lastProgressAt: Date.now(), snoozedUntil: 0, steps: [],
+      stepCount: c.steps || state.settings.maxSteps
     };
     c.phase = "generating"; render();
     let msg = "", err = false;
@@ -1003,8 +1028,9 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
   function tabTasks(){
     const v = visibleTasks(), active = v.filter(t => !isDone(t)), finished = v.filter(isDone);
     const out = [h("h1", { text:"Tasks" }), h("p", { class:"sub", text: `${plural(active.length, "open task")}${finished.length ? ` · ${finished.length} finished` : ""}. Tap any step to edit it.` })];
-    if (v.length) out.push(h("div", { class:"ai-card", role:"note" },
-      h("h3", null, svg(SPARK), "What the AI does"),
+    if (v.length) out.push(h("details", { class:"ai-card", open: lsGet(LS.aiCard) === "open",
+        ontoggle: e => lsSet(LS.aiCard, e.target.open ? "open" : null) },
+      h("summary", null, svg(SPARK), "What the AI does", (() => { const c = svg('<path d="M6 9l6 6 6-6"/>'); c.classList.add("chev"); return c; })()),
       h("ul", null,
         h("li", { text:"Writes steps from your task and your answers. Those steps are marked AI." }),
         h("li", { text:"Splits a step that's still too big (on Today)." }),
@@ -1018,8 +1044,41 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
   }
 
   // ---------- app: settings ----------
-  function settingRow(name, desc, control, forId){
-    return h("div", { class:"setting" }, h("div", { class:"txt" }, forId ? h("label", { for: forId, class:"name", style:"font-size:15px;color:var(--ink)", text: name }) : h("span", { class:"name", text: name }), desc ? h("span", { class:"desc", text: desc }) : null), control);
+  function settingRow(name, desc, control, forId, nameId){
+    return h("div", { class:"setting" }, h("div", { class:"txt" }, forId ? h("label", { for: forId, class:"name", style:"font-size:15px;color:var(--ink)", text: name }) : h("span", { class:"name", id: nameId, text: name }), desc ? h("span", { class:"desc", text: desc }) : null), control);
+  }
+  // A scroll wheel for picking a number. Scroll, tap a number, or use the arrow keys.
+  function wheel(id, values, value, fmt, onPick, labelledBy){
+    const ROW = 36;
+    let idx = Math.max(0, values.indexOf(value)), target = idx, timer, acc = 0, lastNudge = 0;
+    const items = values.map((v, i) => h("div", { "aria-hidden":"true", text: fmt(v), onclick: () => pick(i) }));
+    const el = h("div", { class:"wheel", id, tabindex:"0", role:"spinbutton", "aria-labelledby": labelledBy,
+      "aria-valuemin": String(values[0]), "aria-valuemax": String(values[values.length-1]) }, items);
+    const clamp = (i) => Math.max(0, Math.min(values.length - 1, i));
+    const mark = (i) => { items.forEach((it, k) => it.classList.toggle("on", k === i)); el.setAttribute("aria-valuenow", String(values[i])); el.setAttribute("aria-valuetext", fmt(values[i])); };
+    const commit = (i) => { clearTimeout(timer); timer = setTimeout(() => { if (i !== idx) { idx = i; onPick(values[i]); } }, 160); };
+    // Taps, mouse wheel and arrow keys set the value directly; the scroll just animates to it.
+    const pick = (i) => { i = clamp(i); target = i; lastNudge = Date.now(); mark(i); commit(i); el.scrollTo({ top: i * ROW, behavior: "smooth" }); };
+    // A touch drag or flick settles on whichever number is in the middle.
+    el.addEventListener("scroll", () => {
+      if (Date.now() - lastNudge < 600) return;
+      const i = clamp(Math.round(el.scrollTop / ROW)); target = i; mark(i); commit(i);
+    });
+    // One number per mouse-wheel click or arrow key; trackpad swipes add up the same way.
+    const nudge = (d) => pick(target + d);
+    el.addEventListener("wheel", e => {
+      e.preventDefault();
+      const dy = e.deltaMode === 1 ? e.deltaY * ROW : e.deltaY;
+      if (Math.abs(dy) >= 50) { acc = 0; nudge(Math.sign(dy)); return; } // a mouse-wheel click
+      acc += dy; // trackpad: small deltas add up
+      if (Math.abs(acc) >= 40) { nudge(Math.sign(acc)); acc = 0; }
+    }, { passive: false });
+    el.addEventListener("keydown", e => {
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") { e.preventDefault(); nudge(e.key === "ArrowDown" ? 1 : -1); }
+    });
+    el.syncWheel = () => { el.scrollTop = idx * ROW; };
+    mark(idx);
+    return h("div", { class:"wheel-wrap" }, el);
   }
   function toggle(id, key){
     const inp = h("input", { type:"checkbox", id, role:"switch", checked: !!state.settings[key], onchange: e => { state.settings[key] = e.target.checked; saveSettings(); } });
@@ -1054,8 +1113,8 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
         settingRow("Tasks without deadlines first", "Nothing else pushes these, so they come up before dated tasks. Deadlines within 3 days still go first.", toggle("set-nd","noDeadlineFirst"), "set-nd"))),
       h("section", { class:"section" }, h("h2", { text:"Breakdowns" }), h("div", { class:"group" },
         settingRow("Ask clarifying questions", "One or two quick questions when a task is vague. Off means steps come back right away.", toggle("set-ask","askQuestions"), "set-ask"),
-        settingRow("First step size", "The longest the first step can take.", select("set-first","firstStepMax",[[5,"5 min"],[10,"10 min"],[15,"15 min"]], Number), "set-first"),
-        settingRow("Steps per task", "Up to 10 for bigger projects. Fewer can feel lighter to start.", select("set-max","maxSteps",[[3,"3 steps"],[5,"Up to 5"],[10,"Up to 10"]], Number), "set-max"))),
+        settingRow("First step size", "The longest the first step can take. Never more than 10 minutes.", wheel("set-first", FIRST_STEP_MINUTES, state.settings.firstStepMax, n => `${n} min`, v => { state.settings.firstStepMax = v; saveSettings(true); }, "set-first-l"), null, "set-first-l"),
+        settingRow("Default steps", "Where the step count starts when you add a task. You can change it each time.", wheel("set-max", STEP_COUNTS, state.settings.maxSteps, n => `${n} steps`, v => { state.settings.maxSteps = v; saveSettings(true); }, "set-max-l"), null, "set-max-l"))),
       h("section", { class:"section" }, h("h2", { text:"Google Calendar" }), h("div", { class:"group" },
         settingRow("Show calendar button", "Adds today's step to Google Calendar in one tap.", toggle("set-cal","calendar"), "set-cal"))),
       h("section", { class:"section" }, h("h2", { text:"Appearance" }), h("div", { class:"group" },
@@ -1108,6 +1167,7 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
     }
     const focusId = a && a.id && app.contains(a) ? a.id : null;
     app.replaceChildren(...content);
+    app.querySelectorAll(".wheel").forEach(w => w.syncWheel && w.syncWheel());
     if (focusId) { const el = $(focusId); if (el) el.focus(); }
   }
 
