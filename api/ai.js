@@ -81,7 +81,12 @@ export default async function handler(req, res) {
       body: JSON.stringify({ model: MODEL, max_tokens: 800, messages: [{ role: "user", content: prompt }] })
     });
     if (r.status === 429) return res.status(429).json({ code: "rate_limited" });
-    if (!r.ok) return res.status(502).json({ code: "upstream_error" });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      const detail = { status: r.status, type: err?.error?.type || null, message: String(err?.error?.message || "").slice(0, 300), model: MODEL };
+      console.error("Anthropic API error", detail);
+      return res.status(502).json({ code: "upstream_error", ...detail });
+    }
     const data = await r.json();
     const text = (data.content || []).filter(c => c.type === "text").map(c => c.text).join("");
     const match = text.match(/\{[\s\S]*\}/);
