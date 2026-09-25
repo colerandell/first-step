@@ -5,7 +5,9 @@
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-haiku-4-5";
 const FIRST_STEP_CEILING = 10; // the first step is never longer than this, whatever the setting says
 const clip = (v, n) => String(v ?? "").slice(0, n);
-const firstStepMax = (b) => [5, 10].includes(b.firstStepMax) ? b.firstStepMax : FIRST_STEP_CEILING;
+const between = (v, lo, hi, d) => Number.isInteger(v) && v >= lo && v <= hi ? v : d;
+const firstStepMax = (b) => between(b.firstStepMax, 2, FIRST_STEP_CEILING, FIRST_STEP_CEILING);
+const stepCount = (b) => between(b.stepCount ?? b.maxSteps, 2, 10, 5); // maxSteps: older clients
 
 async function signedIn(req) {
   const url = process.env.SUPABASE_URL, anon = process.env.SUPABASE_ANON_KEY;
@@ -25,11 +27,12 @@ function buildPrompt(b) {
 ${focus}
 Decide if it's vague or oversized (no obvious first action, or more than ~2 hours of work). If it is, write ONE short clarifying question that would make the breakdown specific to them. Good questions ask what it's for, who it's aimed at, or what the one sticking point is (e.g. "What's this portfolio for?", "Which roles are you applying to?", "What part feels hardest to start?"). Don't ask about timing; that's asked separately. Under 70 characters.
 
-Reply with JSON only: {"vague": true, "question": "..."} or {"vague": false, "question": ""}`;
+Also suggest how many steps it needs, from 2 to 10: 2-3 for a small, clear task, 4-6 for a typical one, 7-10 for a big project.
+
+Reply with JSON only: {"vague": true, "question": "...", "steps": 5} or {"vague": false, "question": "", "steps": 3}`;
   }
   if (b.kind === "breakdown") {
     const t = b.task || {};
-    const maxSteps = [3, 5, 10].includes(b.maxSteps) ? b.maxSteps : 5;
     const firstMax = firstStepMax(b);
     const ctx = [focus];
     if (t.purpose) ctx.push(`They answered "${clip(t.purposeQ || "What's this for?", 120)}": ${clip(t.purpose, 200)}`);
@@ -37,14 +40,14 @@ Reply with JSON only: {"vague": true, "question": "..."} or {"vague": false, "qu
     else ctx.push("No deadline. Nothing external is forcing this.");
     const done = Array.isArray(b.keepDone) ? b.keepDone.slice(0, 10).map(s => clip(s, 160)) : [];
     if (done.length) ctx.push(`Already done: ${done.join("; ")}. Continue from there.`);
-    const minSteps = Math.min(3, maxSteps);
+    const count = done.length ? Math.max(1, stepCount(b) - done.length) : stepCount(b);
     return `Break down a stalled, self-directed career or school task into concrete steps.
 
 Task: "${clip(t.title, 200)}"
 ${ctx.filter(Boolean).join("\n")}
 
 Rules:
-- ${minSteps === maxSteps ? maxSteps : `${minSteps} to ${maxSteps}`} steps, in order. Use only as many as the task needs. Smallest action first: step 1 is startable right now and takes ${firstMax} minutes or less.
+- Exactly ${count} ${done.length ? "more " : ""}step${count === 1 ? "" : "s"}, in order. The person chose this number: fewer steps means each one covers more. Smallest action first: step 1 is startable right now and takes ${firstMax} minutes or less.
 - Each step starts with a physical verb and names the specific thing produced, using details they gave. Never generic phases like "Research", "Outline", "Build", "Plan".
 - If the hard part is a decision or something uncomfortable (a resume gap, a topic choice), make step 1 a tiny, low-stakes draft of that decision.
 - Under 90 characters each. Realistic minute estimates.
@@ -119,7 +122,6 @@ async function enforceFirstStep(result, b) {
     const split = await askClaude(buildPrompt({ kind: "split", title: t.title, purpose: t.purpose, stepText: first.text }));
     const smaller = Array.isArray(split.steps) ? split.steps.filter(s => s && s.text) : [];
     if (!smaller.length || !(Number(smaller[0].minutes) <= firstStepMax(b))) return;
-    const maxSteps = [3, 5, 10].includes(b.maxSteps) ? b.maxSteps : 5;
-    result.steps = [...smaller, ...steps.slice(1)].slice(0, Math.max(maxSteps, smaller.length));
+    result.steps = [...smaller, ...steps.slice(1)].slice(0, 10);
   } catch { /* keep the original breakdown */ }
 }
