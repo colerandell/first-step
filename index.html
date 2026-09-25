@@ -1,0 +1,1080 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Break vague career and school tasks into one small step a day.">
+<meta name="theme-color" content="#1F4D3A">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect width=%2224%22 height=%2224%22 rx=%226%22 fill=%22%231F4D3A%22/%3E%3Cpath d=%22M5 17h5v-5h5V7h4%22 fill=%22none%22 stroke=%22%23F6F3EC%22 stroke-width=%222.4%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E">
+<title>First Step</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#E8E4D9; --app:#F6F3EC; --surface:#FFFDF8; --sunk:#F0ECE2; --ink:#1C2A22; --muted:#5B685F; --line:#DDD7C9;
+  --accent:#1F4D3A; --accent-ink:#F6F3EC; --accent-soft:#E2EBE3;
+  --mark:#E9DFC6; --mark-ink:#3B3016; --warn:#86561C; --err:#A63A1C;
+  --display:"Fraunces",Georgia,"Times New Roman",serif;
+  --body:"Instrument Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:var(--body);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#0A110D; --app:#0F1813; --surface:#15221B; --sunk:#111C16; --ink:#EDE9DF; --muted:#A3AEA5; --line:#26362D;
+    --accent:#8FC4A2; --accent-ink:#0E1A13; --accent-soft:#1C3226; --mark:#3A3421; --mark-ink:#EADBB0; --warn:#E2B679; --err:#FF9A7A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#0A110D; --app:#0F1813; --surface:#15221B; --sunk:#111C16; --ink:#EDE9DF; --muted:#A3AEA5; --line:#26362D;
+  --accent:#8FC4A2; --accent-ink:#0E1A13; --accent-soft:#1C3226; --mark:#3A3421; --mark-ink:#EADBB0; --warn:#E2B679; --err:#FF9A7A;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.app{max-width:460px;min-height:100%;margin:0 auto;background:var(--app);display:flex;flex-direction:column;position:relative}
+@media (min-width:500px){.app{border-inline:1px solid var(--line)}}
+.screen{flex:1;display:flex;flex-direction:column;gap:22px;padding-inline:20px;padding-block:24px 110px}
+.screen.center{justify-content:center;padding-block:40px}
+h1{font-family:var(--display);font-weight:600;font-size:28px;letter-spacing:-0.01em;margin:0;text-wrap:balance}
+h2{font-family:var(--body);font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+.sub{color:var(--muted);margin:0}
+.section{display:flex;flex-direction:column;gap:10px}
+button{font:inherit;cursor:pointer;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:10px 16px;min-height:44px;font-weight:600}
+button:hover{border-color:var(--muted)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button.primary:hover{filter:brightness(1.08)}
+button.block{width:100%;min-height:50px;font-size:16px}
+button.quiet{background:transparent;border-color:transparent;color:var(--muted);padding:8px 10px;font-weight:500}
+button.quiet:hover{color:var(--ink);border-color:var(--line)}
+button.danger{color:var(--err)}
+button:disabled{opacity:.55;cursor:default}
+input,select{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-height:44px;width:100%}
+label,.lbl{font-size:13px;font-weight:600;color:var(--muted)}
+.field{display:flex;flex-direction:column;gap:6px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.status{font-size:13px;color:var(--muted)}
+.status.err{color:var(--err)}
+.muted{color:var(--muted);margin:0}
+
+/* brand */
+.logo{width:76px;height:76px;border-radius:20px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center}
+.logo svg{width:44px;height:44px}
+.logo.sm{width:34px;height:34px;border-radius:10px}.logo.sm svg{width:20px;height:20px}
+.wordmark{font-family:var(--display);font-weight:600;font-size:38px;letter-spacing:-0.02em;margin:0}
+.wordmark span{color:var(--accent)}
+.hero{display:flex;flex-direction:column;align-items:flex-start;gap:18px}
+.stack{display:flex;flex-direction:column;gap:10px}
+.fine{font-size:12.5px;color:var(--muted);margin:0}
+
+/* chips (radio) */
+.chips{display:flex;flex-wrap:wrap;gap:8px;border:0;padding:0;margin:0}
+.chips legend{padding:0;margin-bottom:8px}
+.chips label{position:relative;display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink);font-size:14px;font-weight:500;cursor:pointer}
+.chips input{position:absolute;opacity:0;width:1px;height:1px;min-height:0}
+.chips input:checked + span{color:var(--accent);font-weight:600}
+.chips label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.chips label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+
+/* top bar */
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.topbar .who{display:flex;gap:10px;align-items:center}
+.date{font-size:13px;color:var(--muted);font-weight:500}
+
+/* today */
+.kicker{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill{font-variant-numeric:tabular-nums;font-size:12px;font-weight:500;padding:3px 9px;border-radius:999px;background:var(--sunk);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+.pill.mark{background:var(--mark);color:var(--mark-ink);border-color:var(--mark)}
+.pill.ex{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.step-head{font-family:var(--display);font-weight:600;font-size:clamp(22px,6vw,28px);line-height:1.2;letter-spacing:-0.015em;margin:0;text-wrap:balance}
+.from{color:var(--muted);margin:0}
+.from b{color:var(--ink);font-weight:600}
+.stakes{margin:0;padding-top:12px;border-top:1px dashed var(--line);font-size:14px;color:var(--warn);font-variant-numeric:tabular-nums}
+
+/* tasks */
+.list{display:flex;flex-direction:column;gap:12px}
+.task{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.task-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.task-title{font-weight:600;font-size:16px;margin:0;overflow-wrap:anywhere}
+.meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.ctx{font-size:13px;color:var(--muted);margin:0}
+ol.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+ol.steps li{display:grid;grid-template-columns:28px 1fr auto;gap:6px;align-items:center;padding:2px 4px;border-radius:8px}
+ol.steps li.next{background:var(--accent-soft)}
+ol.steps input[type=checkbox]{width:20px;height:20px;min-height:0;accent-color:var(--accent);margin:0;cursor:pointer}
+textarea.step-edit{font:inherit;color:var(--ink);width:100%;resize:none;overflow:hidden;field-sizing:content;border:1px solid transparent;border-radius:10px;background:transparent;padding:6px 8px;min-height:38px;line-height:1.4}
+textarea.step-edit:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+textarea.step-edit:hover{border-color:var(--line)}
+textarea.step-edit:focus{background:var(--surface);border-color:var(--accent)}
+li.done textarea.step-edit{color:var(--muted);text-decoration:line-through}
+.mins{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap}
+.add-step{display:flex;gap:8px}
+.add-step input{min-height:40px}
+.add-step button{min-height:40px;white-space:nowrap}
+.q-grid{display:grid;grid-template-columns:150px 1fr;gap:12px}
+@media (max-width:400px){.q-grid{grid-template-columns:1fr}}
+.qtitle{font-weight:600;margin:0;font-size:17px}
+
+/* settings */
+.group{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.setting{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 16px;min-height:60px}
+.setting + .setting{border-top:1px solid var(--line)}
+.setting .txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.setting .name{font-weight:600}
+.setting .desc{font-size:13px;color:var(--muted)}
+.setting select{width:auto;min-width:120px}
+.switch{position:relative;flex:none;width:50px;height:30px}
+.switch input{position:absolute;inset:0;opacity:0;margin:0;width:100%;height:100%;min-height:0;cursor:pointer;z-index:1}
+.switch .track{position:absolute;inset:0;border-radius:99px;background:var(--line);transition:background .15s}
+.switch .track::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.switch input:checked + .track{background:var(--accent)}
+.switch input:checked + .track::after{transform:translateX(20px)}
+.switch input:focus-visible + .track{outline:2px solid var(--accent);outline-offset:2px}
+.confirm{padding:14px 16px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px;background:var(--sunk)}
+
+/* bottom nav */
+.cal{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:14px;background:var(--sunk);border:1px solid var(--line)}
+.cal .opts{display:flex;flex-wrap:wrap;gap:8px}
+.cal .opts button{font-weight:500}
+.cal .opts button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+.on-cal{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--accent);font-weight:600;margin:0}
+.on-cal svg{width:18px;height:18px}
+button > svg{width:18px;height:18px;flex:none;vertical-align:-3px;margin-right:4px}
+.tour{flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:28px;padding-inline:20px;padding-block:32px 40px}
+.tour-top{display:flex;justify-content:space-between;align-items:center}
+.tour-count{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.04em}
+.tour-body{display:flex;flex-direction:column;gap:18px}
+.tour-icon{width:88px;height:88px;border-radius:24px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.tour-icon svg{width:42px;height:42px}
+.tour-body h1{font-size:32px}
+.tour-body .sub{font-size:16.5px;line-height:1.55}
+.tour-tip{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;font-size:14px;color:var(--muted);margin:0}
+.tour-tip b{color:var(--ink)}
+.dots{display:flex;gap:8px;justify-content:center}
+.dots span{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.dots span.on{background:var(--accent);width:22px;border-radius:99px}
+.start{display:flex;flex-direction:column;gap:14px}
+.start ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;color:var(--muted)}
+.start ol b{color:var(--ink)}
+.build-top{display:flex;align-items:center;gap:8px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.stat .num{font-family:var(--display);font-weight:600;font-size:34px;line-height:1;color:var(--accent);font-variant-numeric:tabular-nums}
+.stat .lab{font-size:13.5px;line-height:1.4;color:var(--ink)}
+.bet{background:var(--accent);color:var(--accent-ink);border-radius:18px;padding:22px;font-family:var(--display);font-weight:500;font-size:20px;line-height:1.4;margin:0}
+.metric{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.metric .head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.metric .name{font-weight:600;font-size:15.5px}
+.metric .goal{font-family:var(--display);font-weight:600;font-size:18px;color:var(--accent);white-space:nowrap}
+.metric .why{font-size:13.5px;line-height:1.5;color:var(--muted);margin:0}
+.metric .kind{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--warn)}
+ol.changes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;counter-reset:c}
+ol.changes li{counter-increment:c;display:grid;grid-template-columns:30px 1fr;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+ol.changes li::before{content:counter(c);font-family:var(--display);font-weight:600;font-size:18px;color:var(--accent)}
+ol.changes b{display:block;font-size:15px;margin-bottom:2px}
+ol.changes span{font-size:13.5px;line-height:1.5;color:var(--muted)}
+.src{font-size:12.5px;color:var(--muted);margin:0}
+.step-side{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.ai-tag{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:1px 7px;white-space:nowrap}
+.ai-tag svg{width:11px;height:11px}
+.ai-zone{border-top:1px dashed var(--line);padding-top:10px;display:flex;flex-direction:column;gap:4px}
+.ai-zone .lbl{display:flex;align-items:center;gap:6px;color:var(--accent)}
+.ai-zone .lbl svg{width:14px;height:14px}
+.ai-card{background:var(--accent-soft);border:1px solid transparent;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.ai-card h3{margin:0;font-size:15px;display:flex;align-items:center;gap:6px;color:var(--accent)}
+.ai-card h3 svg{width:16px;height:16px}
+.ai-card ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:13.5px;line-height:1.45;color:var(--ink)}
+.ai-card p{margin:0;font-size:13px;color:var(--muted)}
+.presets{display:flex;flex-direction:column;gap:8px}
+.presets .opts{display:flex;flex-wrap:wrap;gap:8px}
+.presets button{font-weight:500;font-size:14px;border-radius:999px;min-height:40px;padding:6px 14px}
+a.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border-radius:12px;font-weight:600;text-decoration:none;background:var(--accent);color:var(--accent-ink)}
+a.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.linkish{background:none;border:0;padding:0;min-height:auto;color:var(--accent);font-weight:600;text-decoration:underline;cursor:pointer}
+nav.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(460px,100%);background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom,0px);z-index:10}
+nav.tabs button{border:0;border-radius:0;background:transparent;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px 8px;min-height:60px;font-size:11.5px;font-weight:600}
+nav.tabs button svg{width:22px;height:22px}
+nav.tabs button[aria-current="page"]{color:var(--accent)}
+@media (prefers-reduced-motion:reduce){.switch .track,.switch .track::after{transition:none}}
+</style>
+<style>body{margin:0}</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  const DAY = 86400000;
+  const $ = (id) => document.getElementById(id);
+  const root = document.documentElement;
+  const hostTheme = root.getAttribute("data-theme");
+
+  const DEFAULT_SETTINGS = { stakes: true, askQuestions: true, firstStepMax: 10, maxSteps: 5, noDeadlineFirst: true, theme: "system", calendar: true };
+  const FOCUS = ["School", "Job search", "Career growth", "Returning to work", "Something else"];
+
+  const state = {
+    screen: "splash", tab: "today",
+    tasks: new Map(), settings: { ...DEFAULT_SETTINGS }, profile: null, claudeName: "",
+    ready: false, mode: "loading", busy: new Set(), capture: { phase: "idle" },
+    hideExample: false, extraToday: 0, todayDone: null, confirmDelete: false
+  };
+  let col = null, sample = null;
+  const calState = { stepKey: "", open: false, pick: "", custom: "", busy: false, msg: "", err: false };
+
+  const EXAMPLE = {
+    id: "example", example: true, title: "Update portfolio website",
+    purposeQ: "What's the portfolio for?", purpose: "Landing new freelance clients",
+    timing: null, createdAt: Date.now() - 42*DAY, lastProgressAt: Date.now() - 42*DAY, snoozedUntil: 0,
+    steps: [
+      { id:"e1", text:"List the 3 projects from this year you'd most want a client to see", minutes:10, done:false },
+      { id:"e2", text:"Swap the oldest homepage project for the strongest of those 3", minutes:30, done:false },
+      { id:"e3", text:"Write a 2-sentence caption for each new project: brief and result", minutes:20, done:false },
+      { id:"e4", text:"Update the About line with your current rate and availability", minutes:10, done:false }
+    ]
+  };
+
+  // ---------- helpers ----------
+  const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random().toString(16).slice(2)).replace(/-/g,"").slice(0,16);
+  function h(tag, props, ...kids){
+    const el = document.createElement(tag);
+    if (props) for (const [k,v] of Object.entries(props)){
+      if (v == null || v === false) continue;
+      if (k === "class") el.className = v;
+      else if (k === "text") el.textContent = v;
+      else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+      else if (k in el && k !== "list") { try { el[k] = v; } catch { el.setAttribute(k, v); } }
+      else el.setAttribute(k, v === true ? "" : v);
+    }
+    for (const kid of kids.flat()) if (kid != null && kid !== false) el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+    return el;
+  }
+  function svg(paths, extra=""){
+    const s = document.createElementNS("http://www.w3.org/2000/svg","svg");
+    s.setAttribute("viewBox","0 0 24 24"); s.setAttribute("fill","none"); s.setAttribute("stroke","currentColor");
+    s.setAttribute("stroke-width","2"); s.setAttribute("stroke-linecap","round"); s.setAttribute("stroke-linejoin","round"); s.setAttribute("aria-hidden","true");
+    s.innerHTML = paths + extra; return s;
+  }
+  const ICONS = {
+    today: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    add: '<path d="M12 5v14M5 12h14"/>',
+    tasks: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'
+  };
+  // Placeholder mark (a single step up). Swap for the real logo when it's ready.
+  function logo(sm){ const d = h("div", { class: "logo" + (sm ? " sm" : "") }); const s = svg('<path d="M4 18h6v-6h6V6h4"/>'); s.setAttribute("stroke","currentColor"); s.setAttribute("stroke-width","2.4"); d.append(s); return d; }
+
+  const SPARK = '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7z"/>';
+  const put = (el, ...kids) => el.append(...kids.flat().filter(k => k != null && k !== false));
+  const startOfDay = (t=Date.now()) => { const d = new Date(t); d.setHours(0,0,0,0); return d.getTime(); };
+  const daysSince = (t) => Math.max(0, Math.floor((startOfDay() - startOfDay(t)) / DAY));
+  function daysUntil(dateStr){ if(!dateStr) return null; const [y,m,d] = dateStr.split("-").map(Number); return Math.round((new Date(y,m-1,d).getTime() - startOfDay())/DAY); }
+  const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+  const isDone = (t) => t.steps.length > 0 && t.steps.every(s => s.done);
+  const nextStep = (t) => t.steps.find(s => !s.done);
+  const hasDeadline = (t) => !!(t.timing && t.timing.date);
+  const waited = (t) => { const at = t.lastProgressAt || t.createdAt; return at ? daysSince(at) : NaN; };
+  const firstName = () => ((state.profile && state.profile.name) || "").trim().split(/\s+/)[0] || "";
+
+  function stakesLine(t){
+    const parts = [];
+    if (hasDeadline(t)) {
+      const n = daysUntil(t.timing.date);
+      if (Number.isFinite(n)) {
+        const what = String(t.timing.label || "").trim() || "Deadline";
+        parts.push(n < 0 ? `${what} was ${plural(-n,"day")} ago.` : n === 0 ? `${what} is today.` : `${what} in ${plural(n,"day")}.`);
+      }
+    }
+    const sat = waited(t);
+    if (Number.isFinite(sat) && sat >= 1) parts.push(t.steps.some(s => s.done) ? `No step done in ${plural(sat,"day")}.` : `This has sat for ${plural(sat,"day")}.`);
+    return parts.join(" ");
+  }
+
+  function applyTheme(){
+    const t = state.settings.theme;
+    if (t === "light" || t === "dark") root.setAttribute("data-theme", t);
+    else if (hostTheme) root.setAttribute("data-theme", hostTheme); else root.removeAttribute("data-theme");
+  }
+
+  // ---------- storage ----------
+  const LS = { tasks: "first-step-tasks", settings: "first-step-settings", profile: "first-step-profile", signedOut: "first-step-signed-out" };
+  const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+  const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
+  function loadLocal(){
+    try { const raw = lsGet(LS.tasks); if (raw) for (const t of JSON.parse(raw)) state.tasks.set(t.id, t); } catch {}
+    try { const s = lsGet(LS.settings); if (s) state.settings = { ...DEFAULT_SETTINGS, ...JSON.parse(s) }; } catch {}
+    try { const p = lsGet(LS.profile); if (p) state.profile = JSON.parse(p); } catch {}
+  }
+  function saveLocal(){ lsSet(LS.tasks, JSON.stringify([...state.tasks.values()])); lsSet(LS.settings, JSON.stringify(state.settings)); lsSet(LS.profile, state.profile ? JSON.stringify(state.profile) : null); }
+  async function writeDoc(id, body){ if (state.mode === "db") { try { await col.doc(id).set(JSON.parse(JSON.stringify(body))); return true; } catch { return false; } } saveLocal(); return true; }
+  async function persist(task){ state.tasks.set(task.id, task); render(); if (!(await writeDoc(task.id, task))) toast("Couldn't save that change. Try again in a moment."); }
+  async function removeTask(id){ state.tasks.delete(id); render(); if (state.mode === "db") { try { await col.doc(id).delete(); } catch {} } else saveLocal(); }
+  async function saveSettings(){ applyTheme(); render(); await writeDoc("settings", { kind: "settings", ...state.settings }); }
+  async function saveProfile(){ await writeDoc("profile", { kind: "profile", ...state.profile }); }
+  let toastMsg = "";
+  function toast(m){ toastMsg = m; render(); setTimeout(() => { if (toastMsg === m) { toastMsg = ""; render(); } }, 5000); }
+
+  // ---------- AI ----------
+  const pad2 = (n) => String(n).padStart(2, "0");
+  const focusOf = () => (state.profile && state.profile.focus) || "";
+  function clarifyPrompt(title){ return { kind: "clarify", title, focus: focusOf() }; }
+  function breakdownPrompt(t, keepDone){
+    const S = state.settings, d = new Date();
+    return { kind: "breakdown", focus: focusOf(), maxSteps: S.maxSteps, firstStepMax: S.firstStepMax,
+      today: `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`,
+      task: { title: t.title, purposeQ: t.purposeQ, purpose: t.purpose, timing: t.timing },
+      keepDone: (keepDone || []).map(x => x.text) };
+  }
+  function splitPrompt(t, stepText){ return { kind: "split", title: t.title, purpose: t.purpose, stepText }; }
+  async function aiCall(payload){
+    const headers = { "content-type": "application/json" };
+    if (SB) { try { const { data } = await SB.auth.getSession(); if (data.session) headers.authorization = "Bearer " + data.session.access_token; } catch {} }
+    let r; try { r = await fetch("/api/ai", { method: "POST", headers, body: JSON.stringify(payload) }); } catch { throw { code: "network" }; }
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) throw { code: body.code || "upstream_error" };
+    return body;
+  }
+  function cleanSteps(res, max){
+    const arr = Array.isArray(res?.steps) ? res.steps : [];
+    return arr.map(s => ({ id: uid(), text: String(s.text||"").trim().slice(0,160), minutes: Math.max(1, Math.min(240, Math.round(Number(s.minutes)||10))), done:false, ai:true }))
+              .filter(s => s.text).slice(0, max || state.settings.maxSteps);
+  }
+  function aiErr(e){
+    const c = e && e.code;
+    if (c === "not_signed_in") return "Sign in again to get AI steps.";
+    if (c === "not_configured") return "AI steps aren't set up yet. Add steps by hand for now.";
+    if (c === "network") return "You look offline. Check your connection and try again.";
+    if (c === "rate_limited") return "Too many requests. Give it a minute and try again.";
+    if (c === "cancelled") return "";
+    return "The steps didn't come back. Try again, or add them by hand.";
+  }
+
+  // ---------- task actions ----------
+  function realTask(t){
+    const copy = JSON.parse(JSON.stringify(t));
+    if (t.example) { copy.id = uid(); delete copy.example; copy.createdAt = copy.lastProgressAt = Date.now(); }
+    return copy;
+  }
+  function toggleStep(t, stepId, fromToday){
+    t = realTask(t);
+    const s = t.steps.find(x => x.id === stepId); if (!s) return;
+    s.done = !s.done; s.doneAt = s.done ? Date.now() : null;
+    if (s.done) { t.lastProgressAt = Date.now(); t.snoozedUntil = 0; }
+    if (isDone(t)) t.completedAt = Date.now(); else delete t.completedAt;
+    if (fromToday && s.done) state.todayDone = { text: s.text };
+    if (s.done && !t.example) { stats.doneTotal++; const at = stats.shown[s.id]; if (at && Date.now() - at <= DAY) stats.doneFast++; saveStats(); }
+    persist(t);
+  }
+  function editStep(t, stepId, text){
+    text = text.trim(); const cur = realTask(state.tasks.get(t.id) || t);
+    const s = cur.steps.find(x => x.id === stepId); if (!s || s.text === text) return;
+    if (!text) cur.steps = cur.steps.filter(x => x.id !== stepId); else { s.text = text.slice(0,160); s.edited = true; }
+    stats.edits++; saveStats();
+    persist(cur);
+  }
+  function snooze(t){ t = realTask(t); t.snoozedUntil = startOfDay() + DAY; persist(t); }
+  function addStep(t, text){ t = realTask(t); t.steps.push({ id: uid(), text: text.slice(0,160), minutes: 10, done:false }); persist(t); }
+  async function regenerate(t){
+    if (!sample || state.busy.has(t.id)) return;
+    state.busy.add(t.id); render();
+    try {
+      const cur = realTask(state.tasks.get(t.id) || t);
+      const doneSteps = cur.steps.filter(s => s.done);
+      const fresh = cleanSteps(await sample.json(breakdownPrompt(cur, doneSteps), { cache: false }));
+      if (fresh.length) { cur.steps = [...doneSteps, ...fresh]; state.busy.delete(t.id); await persist(cur); return; }
+    } catch(e){ const m = aiErr(e); if (m) toast(m); }
+    state.busy.delete(t.id); render();
+  }
+  async function splitStep(t, stepId){
+    const key = t.id + ":" + stepId; if (!sample || state.busy.has(key)) return;
+    state.busy.add(key); render();
+    try {
+      const parts = cleanSteps(await sample.json(splitPrompt(t, t.steps.find(s=>s.id===stepId)?.text || "")), 3);
+      if (parts.length) {
+        const cur = realTask(state.tasks.get(t.id) || t);
+        const i = cur.steps.findIndex(s => s.id === stepId);
+        if (i >= 0) { cur.steps.splice(i, 1, ...parts); state.busy.delete(key); await persist(cur); return; }
+      }
+    } catch(e){ const m = aiErr(e); if (m) toast(m); }
+    state.busy.delete(key); render();
+  }
+
+  // ---------- surfacing ----------
+  function ranked(tasks){
+    const now = Date.now(), ndFirst = state.settings.noDeadlineFirst;
+    return tasks.filter(t => !isDone(t) && nextStep(t) && !(t.snoozedUntil > now)).sort((a,b) => {
+      const ua = hasDeadline(a) && daysUntil(a.timing.date) <= 3, ub = hasDeadline(b) && daysUntil(b.timing.date) <= 3;
+      if (ua !== ub) return ua ? -1 : 1;
+      if (ua && ub) return daysUntil(a.timing.date) - daysUntil(b.timing.date);
+      if (ndFirst) { const na = !hasDeadline(a), nb = !hasDeadline(b); if (na !== nb) return na ? -1 : 1; }
+      return waited(b) - waited(a);
+    });
+  }
+  const visibleTasks = () => {
+    const all = [...state.tasks.values()].sort((a,b) => (a.createdAt||0) - (b.createdAt||0));
+    return all;
+  };
+
+  // ---------- session metrics (this browser only) ----------
+  const STATS_KEY = "first-step-stats";
+  function loadStats(){ try { return JSON.parse(lsGet(STATS_KEY) || "") || null; } catch { return null; } }
+  const stats = { shown: {}, doneFast: 0, doneTotal: 0, edits: 0, added: 0 };
+  const initStats = () => Object.assign(stats, loadStats() || {});
+  const saveStats = () => lsSet(STATS_KEY, JSON.stringify(stats));
+  function markShown(stepId){ if (!stats.shown[stepId]) { stats.shown[stepId] = Date.now(); saveStats(); } }
+  function resetStats(){ stats.shown = {}; stats.doneFast = 0; stats.doneTotal = 0; stats.edits = 0; stats.added = 0; lsSet(STATS_KEY, null); }
+
+  function openBuild(){ state.prevScreen = state.screen; state.screen = "build"; render(); window.scrollTo(0,0); }
+  function closeBuild(){ state.screen = state.prevScreen || "welcome"; render(); window.scrollTo(0,0); }
+  function screenBuild(){
+    const statCard = (n, l) => h("div", { class:"stat" }, h("span", { class:"num", text:n }), h("span", { class:"lab", text:l }));
+    const metric = (kind, name, goal, why) => h("div", { class:"metric" }, kind ? h("span", { class:"kind", text:kind }) : null,
+      h("div", { class:"head" }, h("span", { class:"name", text:name }), goal ? h("span", { class:"goal", text:goal }) : null), h("p", { class:"why", text:why }));
+    const shownN = Object.keys(stats.shown).length;
+    const pct = shownN ? Math.round(stats.doneFast / shownN * 100) : 0;
+    const session = shownN === 0 && stats.added === 0
+      ? h("div", { class:"card" }, h("p", { class:"muted", text:"You haven't used the app yet in this browser. Add a task, do the step Today shows you, then come back here to see your numbers." }))
+      : h("div", { class:"stat-grid" },
+          statCard(String(stats.added), stats.added === 1 ? "task you added" : "tasks you added"),
+          statCard(String(shownN), shownN === 1 ? "step Today showed you" : "steps Today showed you"),
+          statCard(shownN ? pct + "%" : "0", `of those done within 24 hours (${stats.doneFast} of ${shownN})`),
+          statCard(state.settings.stakes ? "On" : "Off", "your wait line setting"));
+    const change = (t, why) => h("li", null, h("div", null, h("b", { text:t }), h("span", { text:why })));
+    return h("main", { class:"screen" },
+      h("div", { class:"build-top" }, h("button", { class:"quiet", type:"button", text:"← Back to the app", onclick: closeBuild })),
+      h("h1", { text:"Behind the build" }),
+      h("p", { class:"sub", text:"Why First Step works the way it does, and how I'd know it's working." }),
+
+      h("section", { class:"section" }, h("h2", { text:"Why it exists" }),
+        h("div", { class:"stat-grid" },
+          statCard("7 of 8", "stalled because the task was unclear, not from lack of motivation"),
+          statCard("8 of 8", "swapped in an easier task instead of doing nothing"),
+          statCard("1 of 8", "said a reminder alone would have been enough"),
+          statCard("7 of 8", "said they'd pay for a fix")),
+        h("p", { class:"src", text:"From 8 interviews with students and early-career people doing self-directed work (15 interviews total)." })),
+
+      h("section", { class:"section" }, h("h2", { text:"The bet" }),
+        h("p", { class:"bet", text:"Hand people one small step a day, show honestly how long the task has waited, and stalled work starts moving." })),
+
+      h("section", { class:"section" }, h("h2", { text:"How I'd know it works" }),
+        metric("North star", "Steps done within 24 hours of being shown", "50%+", "Each step takes 10 minutes or less and there's only one a day. If fewer than half get done, the loop isn't working."),
+        metric(null, "Days a task sits stalled", "Cut in half", "Measured before vs after a task's first step, over 2 weeks. The interview tasks had sat 9 to 48 days."),
+        metric(null, "AI steps people rewrite", "Watch", "3 of 8 interviewees rewrote most AI steps. A falling rewrite rate means trust in the breakdowns is growing."),
+        metric("Guardrail", "People who turn the wait line off", "Under 20%", "This audience is already anxious. If more than 1 in 5 switch it off, the pressure is backfiring and the default flips.")),
+
+      h("section", { class:"section" }, h("h2", { text:"Your session" }),
+        h("p", { class:"sub", text:"The north star, measured on you. Real numbers, counted in this browser." }),
+        session),
+
+      h("section", { class:"section" }, h("h2", { text:"What changed, and why" }),
+        h("ol", { class:"changes" },
+          change("Full task list → one step a day", "Interviewees said list length itself made them avoid the app."),
+          change("Added one clarifying question", "Power users expected generic \"research, outline, build\" steps before seeing any."),
+          change("Every step editable, plus regenerate", "3 of 8 interviewees rewrote most AI steps. Without editing, the strongest users leave."),
+          change("Wait line: facts only, off switch", "It states days waited and days to a deadline you set. Never a prediction, and one tap turns it off."),
+          change("Calendar button for today's step only", "A scoped exception to my PRD: blocking time helps, but a full scheduler would turn this into a different product."),
+          change("Removed the pre-filled task, added onboarding", "Testing my own signup, a new account opening on someone else's task was confusing."),
+          change("Fixed cut-off steps and stray \"null\" text", "Both found by using the app the way a new user would."))),
+
+      h("button", { class:"primary block", type:"button", text:"Back to the app", onclick: closeBuild }));
+  }
+
+  // ---------- quick-start tasks (hand-written fallback steps when AI is unavailable) ----------
+  const DAYS = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
+  const PRESETS = [
+    { title:"Start internship applications", purposeQ:"Which roles are you applying to?", purpose:"PM internships for next summer", timing:{ date: DAYS(12), label:"Applications close" }, sat: 27, steps:[
+      ["Open a doc and list 5 companies with PM internship postings open now",10],
+      ["Copy the 3 must-have requirements from the first posting",10],
+      ["Rewrite your resume's top bullet to match those requirements",30],
+      ["Submit the first application, even if the others aren't ready",20],
+      ["Note the next 2 deadlines at the top of your doc",5]] },
+    { title:"Outline dissertation chapter", purposeQ:"Which chapter, and what's it about?", purpose:"Chapter 3, the field results", timing:null, sat: 38, steps:[
+      ["Write one sentence saying what Chapter 3 proves",5],
+      ["List the 4 figures the chapter has to include",10],
+      ["Give each figure a one-line section heading",15],
+      ["Under each heading, jot 3 bullets on what the figure shows",30],
+      ["Send the skeleton to your advisor for a gut check",10]] },
+    { title:"Update LinkedIn and resume", purposeQ:"What part feels hardest to start?", purpose:"Explaining a year off", timing:null, sat: 48, steps:[
+      ["Write one draft line explaining the year off. Rough is fine",5],
+      ["Change your LinkedIn headline to the role you want next",10],
+      ["Swap your oldest resume bullet for a recent result",20],
+      ["Ask one former coworker for a short recommendation",10]] }
+  ];
+  function presetTask(pr){
+    const now = Date.now();
+    return { id: uid(), title: pr.title, purposeQ: pr.purposeQ, purpose: pr.purpose, timing: pr.timing,
+      createdAt: now, lastProgressAt: now, snoozedUntil: 0,
+      steps: pr.steps.map(([text, minutes]) => ({ id: uid(), text, minutes, done:false })) };
+  }
+  async function addPreset(pr){
+    state.extraToday = 0; state.todayDone = null; stats.added++; saveStats();
+    stats.added++; saveStats();
+    await persist(presetTask(pr));
+    state.capture = { phase: "idle" }; state.tab = "today"; render(); window.scrollTo(0,0);
+  }
+  // ---------- first-run tour ----------
+  const TOUR = [
+    { icon: "add", title: "Add the task you keep avoiding", body: "Vague is fine. \"Work on portfolio\" or \"start applications\" is exactly what this is for.", tip: "Tap <b>Add</b> at the bottom to capture one." },
+    { icon: "chat", title: "Answer one quick question", body: "If the task is vague, First Step asks what it's for and whether a date is driving it. That's how the steps end up specific to you.", tip: "No deadline? Just skip the date." },
+    { icon: "today", title: "Do one step a day", body: "The <b>Today</b> tab shows a single small step, never your whole list. The first step always takes 10 minutes or less.", tip: "<b>Done</b> to finish it, <b>Still too big</b> to shrink it, <b>Not today</b> to set it aside." },
+    { icon: "tasks", title: "Fix anything", body: "Open <b>Tasks</b> to see every step. Tap any step to rewrite it, or regenerate the ones you haven't done.", tip: "<b>Settings</b> lets you turn off the \"days waited\" line and pick your step size." }
+  ];
+  ICONS.chat = '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M9 10h6M9 14h4"/>';
+  function startTour(){ state.screen = "tour"; state.tourStep = 0; render(); window.scrollTo(0,0); }
+  function finishTour(tab){
+    lsSet(LS.signedOut, null);
+    if (state.profile && !state.profile.toured) { state.profile = { ...state.profile, toured: true }; saveProfile(); }
+    state.screen = "app"; state.tab = tab || (state.tasks.size ? "today" : "add"); render(); window.scrollTo(0,0);
+  }
+  function screenTour(){
+    const i = state.tourStep || 0, t = TOUR[i], last = i === TOUR.length - 1;
+    const body = h("p", { class:"sub" }); body.innerHTML = t.body;
+    const tip = h("p", { class:"tour-tip" }); tip.innerHTML = t.tip;
+    return h("main", { class:"tour", "aria-label":"How First Step works" },
+      h("div", { class:"tour-top" },
+        h("span", { class:"tour-count", text:`How it works · ${i+1} of ${TOUR.length}` }),
+        h("button", { class:"quiet", type:"button", text:"Skip", onclick: () => finishTour() })),
+      h("div", { class:"tour-body" }, h("div", { class:"tour-icon" }, svg(ICONS[t.icon])), h("h1", { text: t.title }), body, tip),
+      h("div", { class:"stack" },
+        h("div", { class:"dots", "aria-hidden":"true" }, TOUR.map((_, k) => h("span", { class: k === i ? "on" : "" }))),
+        h("button", { class:"primary block", type:"button", text: last ? (state.tasks.size ? "Back to the app" : "Add my first task") : "Next",
+          onclick: () => { if (last) finishTour(); else { state.tourStep = i + 1; render(); } } }),
+        i > 0 ? h("button", { class:"quiet", type:"button", text:"Back", onclick: () => { state.tourStep = i - 1; render(); } }) : null));
+  }
+
+  // ---------- accounts ----------
+  let SB = null, CFG = { ai: false, google: false }, me = null;
+  function goApp(){ lsSet(LS.signedOut, null); state.screen = "app"; state.tab = "today"; render(); window.scrollTo(0,0); }
+  function authMsg(e){
+    const m = (e && e.message) || "";
+    if (/invalid login/i.test(m)) return "That email and password don't match.";
+    if (/already registered|already exists/i.test(m)) return "There's already an account with that email. Try signing in.";
+    if (/password/i.test(m) && /at least|short|weak|characters/i.test(m)) return "Use a password with at least 8 characters.";
+    if (/not confirmed|confirm/i.test(m)) return "Confirm your email first. Check your inbox for the link.";
+    if (/rate|too many/i.test(m)) return "Too many tries. Wait a minute and try again.";
+    return m || "Something went wrong. Try again.";
+  }
+  const emailOk = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  function applyRows(rows){
+    state.tasks.clear(); state.profile = null; state.settings = { ...DEFAULT_SETTINGS };
+    for (const row of rows || []) {
+      const v = row.data; if (!v) continue;
+      if (row.id === "settings") { const { kind, ...rest } = v; state.settings = { ...DEFAULT_SETTINGS, ...rest }; if (![3,5,10].includes(state.settings.maxSteps)) state.settings.maxSteps = 5; continue; }
+      if (row.id === "profile") { const { kind, ...rest } = v; state.profile = rest; continue; }
+      if (Array.isArray(v.steps)) state.tasks.set(row.id, { ...v, id: row.id, steps: v.steps.map(x => ({ ...x })) });
+    }
+  }
+  function sbCollection(){
+    return {
+      doc: (id) => ({
+        set: async (data) => { const { error } = await SB.from("items").upsert({ user_id: me, id, data, updated_at: new Date().toISOString() }); if (error) throw error; },
+        delete: async () => { const { error } = await SB.from("items").delete().eq("user_id", me).eq("id", id); if (error) throw error; }
+      }),
+      load: async () => { const { data, error } = await SB.from("items").select("id,data").eq("user_id", me); if (error) throw error; return data; }
+    };
+  }
+  async function onSession(session){
+    if (!session || !session.user) return;
+    if (me === session.user.id) return;
+    me = session.user.id; state.mode = "db"; col = sbCollection();
+    state.screen = "splash"; render();
+    try { applyRows(await col.load()); }
+    catch { toast("Couldn't load your tasks. Reload to try again."); }
+    applyTheme();
+    if (!state.profile) {
+      const md = session.user.user_metadata || {};
+      state.profile = { name: String(md.name || md.full_name || (session.user.email || "").split("@")[0]).slice(0,60),
+        email: session.user.email || "", focus: FOCUS.includes(md.focus) ? md.focus : FOCUS[0], createdAt: Date.now() };
+      if (md.stakes === false) state.settings.stakes = false;
+      await saveProfile(); await saveSettings();
+      startTour(); return;
+    }
+    if (session.user.email && state.profile.email !== session.user.email) { state.profile = { ...state.profile, email: session.user.email }; saveProfile(); }
+    goApp();
+  }
+  async function signOut(){
+    if (SB) { try { await SB.auth.signOut(); } catch {} me = null; state.tasks.clear(); state.profile = null; state.settings = { ...DEFAULT_SETTINGS }; applyTheme(); }
+    else lsSet(LS.signedOut, "1");
+    state.screen = "welcome"; state.tab = "today"; render(); window.scrollTo(0,0);
+  }
+  function googleButton(){
+    if (!SB || !CFG.google) return null;
+    return h("button", { class:"block", type:"button", text:"Continue with Google",
+      onclick: async () => { try { await SB.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin } }); } catch (e) { toast(authMsg(e)); } } });
+  }
+
+  function screenSplash(){
+    return h("main", { class:"screen center" }, h("div", { class:"hero" }, logo(), h("p", { class:"wordmark" }, "First ", h("span", { text:"Step" })), h("p", { class:"sub", text:"Loading…" })));
+  }
+  function screenWelcome(){
+    return h("main", { class:"screen center" },
+      h("div", { class:"hero" },
+        logo(),
+        h("p", { class:"wordmark" }, "First ", h("span", { text:"Step" })),
+        h("h1", { text:"The work that moves you forward, one step at a time." }),
+        h("p", { class:"sub", text:"Add the task you keep pushing to tomorrow. Get back the one thing to do first." })),
+      h("div", { class:"stack" },
+        h("button", { class:"primary block", type:"button", text:"Create account", onclick: () => { state.screen = (!SB && state.profile) ? "signin" : "signup"; render(); } }),
+        h("button", { class:"block", type:"button", text:"Sign in", onclick: () => { state.screen = "signin"; render(); } }),
+        googleButton()),
+      h("p", { class:"fine", text: SB ? "Free to use. Your tasks are private and sync across your devices." : "Your account and tasks are saved in this browser." }));
+  }
+  function screenSignin(){
+    const back = h("button", { class:"quiet", type:"button", text:"Back", onclick: () => { state.screen = "welcome"; render(); } });
+    if (!SB) {
+      const p = state.profile;
+      if (!p) return h("main", { class:"screen center" },
+        h("div", { class:"hero" }, logo(), h("h1", { text:"No account yet" }),
+          h("p", { class:"sub", text:"There's no First Step account in this browser yet. Create one to get started." })),
+        h("div", { class:"stack" }, h("button", { class:"primary block", type:"button", text:"Create account", onclick: () => { state.screen = "signup"; render(); } }), back));
+      return h("main", { class:"screen center" },
+        h("div", { class:"hero" }, logo(), h("h1", { text:`Welcome back${firstName() ? ", " + firstName() : ""}` }),
+          h("p", { class:"sub", text: state.tasks.size ? plural([...state.tasks.values()].filter(t=>!isDone(t)).length, "task") + " waiting for you." : "Your account is ready." })),
+        h("div", { class:"stack" }, h("button", { class:"primary block", type:"button", text:`Continue as ${p.name || "you"}`, onclick: goApp }), back));
+    }
+    const si = state.si || (state.si = { email: "", password: "" });
+    const email = h("input", { id:"si-email", type:"email", autocomplete:"email", maxlength:"120", value: si.email, placeholder:"you@gmail.com", oninput: e => { si.email = e.target.value; } });
+    const pass = h("input", { id:"si-pass", type:"password", autocomplete:"current-password", maxlength:"100", value: si.password, oninput: e => { si.password = e.target.value; } });
+    const status = h("p", { class:"status", role:"status", text: si.msg || "" }); if (si.err) status.classList.add("err");
+    const submit = async (ev) => {
+      ev.preventDefault();
+      const em = email.value.trim();
+      if (!emailOk(em)) { Object.assign(si, { msg:"Add the email you signed up with.", err:true }); render(); return; }
+      if (!pass.value) { Object.assign(si, { msg:"Add your password.", err:true }); render(); return; }
+      Object.assign(si, { busy:true, msg:"", err:false }); render();
+      const { data, error } = await SB.auth.signInWithPassword({ email: em, password: pass.value });
+      si.busy = false;
+      if (error) { Object.assign(si, { msg: authMsg(error), err:true }); render(); return; }
+      state.si = null; await onSession(data.session);
+    };
+    const forgot = async () => {
+      const em = email.value.trim();
+      if (!emailOk(em)) { Object.assign(si, { msg:"Type your email above first, then tap Forgot password.", err:true }); render(); return; }
+      const { error } = await SB.auth.resetPasswordForEmail(em, { redirectTo: location.origin });
+      Object.assign(si, error ? { msg: authMsg(error), err:true } : { msg:"If there's an account for that email, a reset link is on its way.", err:false }); render();
+    };
+    return h("main", { class:"screen" },
+      h("div", { class:"row" }, back),
+      h("div", { class:"hero" }, logo(true), h("h1", { text:"Sign in" })),
+      h("form", { class:"stack", onsubmit: submit, novalidate: true },
+        h("div", { class:"field" }, h("label", { for:"si-email", text:"Email" }), email),
+        h("div", { class:"field" }, h("label", { for:"si-pass", text:"Password" }), pass),
+        status,
+        h("button", { class:"primary block", type:"submit", text: si.busy ? "Signing in…" : "Sign in", disabled: !!si.busy }),
+        h("div", { class:"row" }, h("button", { class:"quiet", type:"button", text:"Forgot password?", onclick: forgot }))),
+      googleButton() ? h("div", { class:"stack" }, h("p", { class:"fine", text:"or" }), googleButton()) : null,
+      h("p", { class:"fine" }, "New here? ", h("button", { class:"linkish", type:"button", text:"Create an account", onclick: () => { state.screen = "signup"; render(); } })));
+  }
+  function screenSignup(){
+    const su = state.su || (state.su = { name: "", email: "", password: "", focus: FOCUS[0], stakes: true });
+    const name = h("input", { id:"su-name", autocomplete:"given-name", maxlength:"60", value: su.name, placeholder:"Your name", oninput: e => { su.name = e.target.value; } });
+    const email = h("input", { id:"su-email", type:"email", autocomplete:"email", maxlength:"120", value: su.email, placeholder:"you@gmail.com", oninput: e => { su.email = e.target.value; } });
+    const pass = SB ? h("input", { id:"su-pass", type:"password", autocomplete:"new-password", maxlength:"100", value: su.password, placeholder:"At least 8 characters", oninput: e => { su.password = e.target.value; } }) : null;
+    const chips = h("fieldset", { class:"chips" }, h("legend", { class:"lbl", text:"What are you working toward right now?" }),
+      FOCUS.map(f => { const inp = h("input", { type:"radio", name:"focus", value:f, checked: su.focus === f, onchange: () => { su.focus = f; } }); return h("label", null, inp, h("span", { text:f })); }));
+    const stakesIn = h("input", { type:"checkbox", id:"su-stakes", checked: su.stakes, role:"switch", onchange: e => { su.stakes = e.target.checked; } });
+    const status = h("p", { class:"status err", role:"status", text: su.msg || "" });
+    const create = async (ev) => {
+      ev.preventDefault();
+      const n = name.value.trim(); if (!n) { su.msg = "Add your name so we know what to call you."; render(); return; }
+      const em = email.value.trim(); if (!emailOk(em)) { su.msg = "Add an email like you@gmail.com."; render(); return; }
+      if (SB && (pass.value || "").length < 8) { su.msg = "Use a password with at least 8 characters."; render(); return; }
+      su.msg = "";
+      if (!SB) {
+        state.profile = { name: n.slice(0,60), email: em.slice(0,120), focus: su.focus, createdAt: Date.now() };
+        state.settings.stakes = stakesIn.checked;
+        await saveProfile(); await saveSettings(); startTour(); return;
+      }
+      su.busy = true; render();
+      const { data, error } = await SB.auth.signUp({ email: em, password: pass.value,
+        options: { data: { name: n.slice(0,60), focus: su.focus, stakes: stakesIn.checked }, emailRedirectTo: location.origin } });
+      su.busy = false;
+      if (error) { su.msg = authMsg(error); render(); return; }
+      state.su = null;
+      if (data.session) { await onSession(data.session); return; }
+      state.pendingEmail = em; state.screen = "confirm"; render();
+    };
+    return h("main", { class:"screen" },
+      h("div", { class:"row" }, h("button", { class:"quiet", type:"button", text:"Back", onclick: () => { state.screen = "welcome"; render(); } })),
+      h("div", { class:"hero" }, logo(true), h("h1", { text:"Create your account" }), h("p", { class:"sub", text:"Your answers make the steps fit you." })),
+      h("form", { class:"stack", onsubmit: create, novalidate: true },
+        h("div", { class:"field" }, h("label", { for:"su-name", text:"Name" }), name),
+        h("div", { class:"field" }, h("label", { for:"su-email", text:"Email" }), email),
+        pass ? h("div", { class:"field" }, h("label", { for:"su-pass", text:"Password" }), pass) : null,
+        chips,
+        h("div", { class:"group" }, settingRow("Show how long tasks have waited", "A short line with days waited and days until your deadline. You can change this later.", h("span", { class:"switch" }, stakesIn, h("span", { class:"track" })), "su-stakes")),
+        status,
+        h("button", { class:"primary block", type:"submit", text: su.busy ? "Creating…" : "Create account", disabled: !!su.busy })),
+      googleButton(),
+      h("p", { class:"fine", text: SB ? "Your tasks are private to you and sync across your devices." : "Your account and tasks are saved in this browser." }));
+  }
+  function screenConfirm(){
+    return h("main", { class:"screen center" },
+      h("div", { class:"hero" }, logo(), h("h1", { text:"Check your email" }),
+        h("p", { class:"sub", text:`We sent a confirmation link to ${state.pendingEmail || "your email"}. Open it and you'll land back here, signed in.` })),
+      h("div", { class:"stack" }, h("button", { class:"block", type:"button", text:"Back to sign in", onclick: () => { state.screen = "signin"; render(); } })));
+  }
+  function screenNewPass(){
+    const np = state.np || (state.np = { v: "" });
+    const pass = h("input", { id:"np-pass", type:"password", autocomplete:"new-password", maxlength:"100", value: np.v, placeholder:"At least 8 characters", oninput: e => { np.v = e.target.value; } });
+    const status = h("p", { class:"status err", role:"status", text: np.msg || "" });
+    const save = async (ev) => {
+      ev.preventDefault();
+      if (np.v.length < 8) { np.msg = "Use a password with at least 8 characters."; render(); return; }
+      const { data, error } = await SB.auth.updateUser({ password: np.v });
+      if (error) { np.msg = authMsg(error); render(); return; }
+      state.np = null; const s2 = await SB.auth.getSession(); me = null; await onSession(s2.data.session);
+    };
+    return h("main", { class:"screen center" },
+      h("div", { class:"hero" }, logo(true), h("h1", { text:"Set a new password" })),
+      h("form", { class:"stack", onsubmit: save, novalidate: true },
+        h("div", { class:"field" }, h("label", { for:"np-pass", text:"New password" }), pass), status,
+        h("button", { class:"primary block", type:"submit", text:"Save password" })));
+  }
+
+  // ---------- app: today ----------
+  function greeting(){ const hr = new Date().getHours(); return hr < 12 ? "Morning" : hr < 18 ? "Afternoon" : "Evening"; }
+  function tabToday(){
+    const tasks = visibleTasks();
+    const r = ranked(tasks);
+    const card = h("div", { class:"card" });
+    if (state.todayDone && state.extraToday === 0) {
+      put(card, 
+        h("p", { class:"step-head", text:"That's today's step. Done." }),
+        h("p", { class:"from" }, "You finished: ", h("b", { text: state.todayDone.text })),
+        r.length ? h("div", { class:"row" }, h("button", { type:"button", text:"Give me one more", onclick: () => { state.extraToday = 1; state.todayDone = null; render(); } })) : null);
+    } else if (!tasks.length) {
+      put(card,
+        h("p", { class:"step-head", text:"Let's get started" }),
+        h("div", { class:"start" },
+          h("p", { class:"from", text:"Your Today screen is empty until you add something. Here's the loop:" }),
+          (() => { const ol = h("ol"); ol.innerHTML = "<li><b>Add</b> a task you keep putting off</li><li>Get back <b>one small step</b> to do first</li><li>Come back here each day for the next one</li>"; return ol; })()),
+        h("div", { class:"row" },
+          h("button", { class:"primary", type:"button", text:"Add your first task", onclick: () => { state.tab = "add"; render(); } }),
+          h("button", { class:"quiet", type:"button", text:"How it works", onclick: startTour })));
+    } else if (!r[0]) {
+      const snoozed = tasks.some(x => !isDone(x) && x.snoozedUntil > Date.now());
+      put(card, h("p", { class:"muted", text: snoozed ? "Everything's set aside until tomorrow." : "Nothing waiting on a step." }),
+        h("div", { class:"row" }, h("button", { class:"primary", type:"button", text:"Add a task", onclick: () => { state.tab = "add"; render(); } })));
+    } else {
+      const t = r[0], s = nextStep(t);
+      if (!t.example) markShown(s.id);
+      const line = state.settings.stakes ? stakesLine(t) : "";
+      const busy = state.busy.has(t.id+":"+s.id);
+      put(card, 
+        h("div", { class:"kicker" }, t.example ? h("span", { class:"pill ex", text:"Example" }) : null, h("span", { class:"pill mark", text:`~${s.minutes} min` })),
+        h("p", { class:"step-head", text: s.text }),
+        h("p", { class:"from" }, "Part of ", h("b", { text: t.title }), ` · step ${t.steps.indexOf(s)+1} of ${t.steps.length}`),
+        h("div", { class:"row" },
+          h("button", { class:"primary", type:"button", text:"Done", onclick: () => toggleStep(t, s.id, true) }),
+          sample ? h("button", { type:"button", text: busy ? "Splitting…" : "Still too big", disabled: busy, onclick: () => splitStep(t, s.id) }) : null,
+          h("button", { class:"quiet", type:"button", text:"Not today", onclick: () => snooze(t) })),
+        calendarBlock(t, s),
+        line ? h("p", { class:"stakes", text: line }) : null);
+    }
+    return [
+      h("div", { class:"topbar" }, h("div", { class:"who" }, logo(true), h("h1", { text: `${greeting()}${firstName() ? ", " + firstName() : ""}` }))),
+      h("div", { class:"date", text: new Date().toLocaleDateString(undefined, { weekday:"long", month:"long", day:"numeric" }) }),
+      h("section", { class:"section", "aria-label":"Today's one step" }, h("h2", { text:"Today's one step" }), card)
+    ];
+  }
+
+  // ---------- calendar ----------
+  const pad = (n) => String(n).padStart(2, "0");
+  function localISO(d){ const off = -d.getTimezoneOffset(), sg = off >= 0 ? "+" : "-", a = Math.abs(off);
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00${sg}${pad(Math.floor(a/60))}:${pad(a%60)}`; }
+  const fmtWhen = (ms) => new Date(ms).toLocaleString(undefined, { weekday:"short", hour:"numeric", minute:"2-digit" });
+  function calOptions(){
+    const now = new Date(), opts = [];
+    const soon = new Date(now.getTime() + 15*60000); soon.setMinutes(Math.ceil(soon.getMinutes()/5)*5, 0, 0);
+    opts.push(["soon", "In 15 min", soon]);
+    if (now.getHours() < 19) { const t = new Date(now); t.setHours(19,0,0,0); opts.push(["tonight", "Tonight 7 PM", t]); }
+    const tm = new Date(now); tm.setDate(tm.getDate()+1); tm.setHours(9,0,0,0); opts.push(["tomorrow", "Tomorrow 9 AM", tm]);
+    opts.push(["custom", "Pick a time", null]);
+    return opts;
+  }
+  function calErr(e){
+    const c = e && e.code;
+    if (c === "server_not_connected" || c === "server_not_found") return "Connect Google Calendar in your Claude settings (Connectors), then try again.";
+    if (c === "needs_reauth") return "Google Calendar needs you to sign in again in your Claude settings.";
+    if (c === "not_granted" || c === "consent_required" || c === "approval_required" || c === "cancelled") return "Calendar access wasn't allowed, so nothing was added.";
+    if (c === "rate_limited") return "Too many requests. Try again in a minute.";
+    return "Couldn't add it to your calendar. Try again.";
+  }
+  const gcalStamp = (d) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  function calStart(){
+    if (calState.pick === "custom") { const d = calState.custom ? new Date(calState.custom) : null; return d && !isNaN(d) ? d : null; }
+    const chosen = calOptions().find(o => o[0] === calState.pick); return chosen ? chosen[2] : null;
+  }
+  function calLink(t, s, start){
+    const end = new Date(start.getTime() + Math.max(15, s.minutes || 15) * 60000);
+    const q = new URLSearchParams({ action: "TEMPLATE", text: `First step: ${s.text}`.slice(0, 200),
+      details: `Part of: ${t.title}${t.purpose ? `\n${t.purpose}` : ""}\n\nAdded from First Step.`, dates: `${gcalStamp(start)}/${gcalStamp(end)}` });
+    return "https://calendar.google.com/calendar/render?" + q.toString();
+  }
+  function markScheduled(t, s, start){
+    const cur = realTask(state.tasks.get(t.id) || t);
+    const st = cur.steps.find(x => x.id === s.id); if (st) st.scheduledAt = start.getTime();
+    Object.assign(calState, { open: false, pick: "", msg: "", err: false });
+    setTimeout(() => persist(cur), 0);
+  }
+  function calendarBlock(t, s){
+    if (!state.settings.calendar) return null;
+    const key = t.id + ":" + s.id;
+    if (calState.stepKey !== key) Object.assign(calState, { stepKey: key, open: false, pick: "", custom: "", busy: false, msg: "", err: false });
+    const icon = svg('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>');
+    if (s.scheduledAt && !calState.open) return h("div", { class:"row" },
+      h("p", { class:"on-cal" }, icon, `Sent to Google Calendar · ${fmtWhen(s.scheduledAt)}`),
+      h("button", { class:"quiet", type:"button", text:"Add again", onclick: () => { calState.open = true; render(); } }));
+    if (!calState.open) return h("div", { class:"row" }, h("button", { class:"quiet", type:"button", onclick: () => { calState.open = true; render(); } }, icon, " Add to Google Calendar"));
+    const custom = calState.pick === "custom" ? h("div", { class:"field" }, h("label", { for:"cal-custom", text:"Start time" }),
+      h("input", { id:"cal-custom", type:"datetime-local", value: calState.custom, onchange: e => { calState.custom = e.target.value; } })) : null;
+    return h("div", { class:"cal", role:"group", "aria-label":"Block time on Google Calendar" },
+      h("span", { class:"lbl", text:`When? Opens Google Calendar with a ${Math.max(15, s.minutes || 15)}-min event filled in. Tap Save there.` }),
+      h("div", { class:"opts" }, calOptions().map(([id, label]) => h("button", { type:"button", text: label, "aria-pressed": String(calState.pick === id), onclick: () => { calState.pick = id; calState.msg = ""; render(); } }))),
+      custom,
+      h("div", { class:"row" },
+        (() => { const st = calStart(); return st
+          ? h("a", { class:"btn", href: calLink(t, s, st), target:"_blank", rel:"noopener", onclick: () => markScheduled(t, s, st) }, "Open Google Calendar")
+          : h("button", { class:"primary", type:"button", text:"Open Google Calendar", disabled: true }); })(),
+        h("button", { class:"quiet", type:"button", text:"Cancel", disabled: calState.busy, onclick: () => { Object.assign(calState, { open:false, pick:"", msg:"" }); render(); } })),
+      calState.msg ? h("p", { class:"status" + (calState.err ? " err" : ""), role:"status", text: calState.msg }) : null);
+  }
+
+  // ---------- app: add ----------
+  function tabAdd(){
+    const c = state.capture;
+    const card = h("div", { class:"card" });
+    if (c.phase === "idle" || c.phase === "checking") {
+      const input = h("input", { id:"task-title", autocomplete:"off", maxlength:"200", placeholder:"e.g. Start internship applications", value: c.title || "", oninput: e => { c.title = e.target.value; } });
+      const go = async () => {
+        const title = input.value.trim(); if (!title) { input.focus(); return; }
+        if (!state.settings.askQuestions) { state.capture = { phase:"questions", title, vague:false, question:"", skipAll:true }; return submitCapture(true); }
+        state.capture = { phase: "checking", title }; render();
+        let q = { vague: true, question: "What's this for?" };
+        if (sample) { try { const r = await sample.json(clarifyPrompt(title), { modelTier: "quick" }); if (r && typeof r.vague === "boolean") q = { vague: r.vague, question: String(r.question||"").slice(0,120) }; } catch {} }
+        state.capture = { phase: "questions", title, vague: q.vague, question: q.vague ? (q.question || "What's this for?") : "" };
+        render();
+        const first = $("q-purpose") || $("q-date"); if (first) first.focus();
+      };
+      input.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); go(); } });
+      put(card, 
+        h("div", { class:"field" }, h("label", { for:"task-title", text:"The task you keep pushing to tomorrow" }), input),
+        h("button", { class:"primary block", type:"button", text: c.phase === "checking" ? "Reading it…" : "Next", disabled: c.phase === "checking", onclick: go }),
+        c.msg ? h("p", { class:"status" + (c.err ? " err" : ""), role:"status", text: c.msg }) : null);
+      if (c.phase === "idle") put(card, h("div", { class:"presets" },
+        h("span", { class:"lbl", text:"Or start from a common one" }),
+        h("div", { class:"opts" }, PRESETS.map(pr => h("button", { type:"button", text: pr.title,
+          onclick: () => { if (sample) { input.value = pr.title; c.title = pr.title; go(); } else addPreset(pr); } })))));
+    } else {
+      const gen = c.phase === "generating";
+      const purpose = c.vague ? h("input", { id:"q-purpose", autocomplete:"off", maxlength:"200", placeholder:"A sentence is plenty", value: c.purpose || "", oninput: e => { c.purpose = e.target.value; } }) : null;
+      const label = h("input", { id:"q-label", autocomplete:"off", maxlength:"60", placeholder:"e.g. Applications close", value: c.label || "", oninput: e => { c.label = e.target.value; } });
+      const date = h("input", { id:"q-date", type:"date", value: c.date || "", onchange: e => { c.date = e.target.value; } });
+      put(card, 
+        h("p", { class:"qtitle", text: `“${c.title}”` }),
+        c.vague ? h("div", { class:"field" }, h("label", { for:"q-purpose", text: c.question }), purpose) : null,
+        h("div", { class:"field" },
+          h("span", { class:"lbl", id:"q-timing", text:"Is anything driving the timing? Skip if not." }),
+          h("div", { class:"q-grid", role:"group", "aria-labelledby":"q-timing" },
+            h("div", { class:"field" }, h("label", { for:"q-date", text:"Date" }), date),
+            h("div", { class:"field" }, h("label", { for:"q-label", text:"What happens then" }), label))),
+        h("button", { class:"primary block", type:"button", text: gen ? "Writing steps…" : "Break it down", disabled: gen, onclick: () => submitCapture(false) }),
+        h("div", { class:"row" },
+          h("button", { class:"quiet", type:"button", text:"Skip questions", disabled: gen, onclick: () => submitCapture(true) }),
+          h("button", { class:"quiet", type:"button", text:"Cancel", disabled: gen, onclick: () => { state.capture = { phase: "idle" }; render(); } })));
+    }
+    const firstTime = state.tasks.size === 0;
+    return [h("h1", { text: firstTime ? "Add your first task" : "Add a task" }), h("p", { class:"sub", text: firstTime ? "Pick something that's been sitting on your list. Vague is fine." : "Vague is fine. That's what this is for." }), card];
+  }
+  async function submitCapture(skip){
+    const c = state.capture;
+    const t = {
+      id: uid(), title: c.title.slice(0,200),
+      purposeQ: c.vague ? c.question : "", purpose: !skip ? (c.purpose || "").trim().slice(0,200) : "",
+      timing: !skip && c.date ? { date: c.date, label: (c.label || "").trim().slice(0,60) || "Deadline" } : null,
+      createdAt: Date.now(), lastProgressAt: Date.now(), snoozedUntil: 0, steps: []
+    };
+    c.phase = "generating"; render();
+    let msg = "", err = false;
+    if (sample) {
+      try { t.steps = cleanSteps(await sample.json(breakdownPrompt(t))); if (!t.steps.length) { msg = "No steps came back. Add your first one in Tasks."; err = true; } }
+      catch(e){ msg = aiErr(e); err = true; }
+    } else { msg = "Added. AI steps aren't set up yet, so add your first step in Tasks."; err = true; }
+    state.extraToday = 0; state.todayDone = null;
+    stats.added++; saveStats();
+    await persist(t);
+    state.capture = { phase: "idle", msg, err };
+    state.tab = err ? "tasks" : "today"; render();
+  }
+
+  // ---------- app: tasks ----------
+  function renderTask(t){
+    const done = t.steps.filter(s => s.done).length;
+    const nxt = nextStep(t);
+    const input = h("input", { placeholder: t.steps.length ? "Add a step" : "What's the very first thing you'd do?", maxlength:"160", "aria-label": "New step for " + t.title });
+    const submitStep = () => { const v = input.value.trim(); if (v) addStep(t, v); };
+    input.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); submitStep(); } });
+    const regenBusy = state.busy.has(t.id);
+    const ctx = [t.purpose || null, hasDeadline(t) ? `${t.timing.label || "Deadline"}: ${new Date(t.timing.date+"T00:00").toLocaleDateString(undefined,{month:"short",day:"numeric"})}` : "No deadline"].filter(Boolean).join(" · ");
+    return h("article", { class:"task" },
+      h("div", { class:"task-head" },
+        h("div", null,
+          h("p", { class:"task-title", text: t.title }),
+          h("div", { class:"meta" },
+            t.example ? h("span", { class:"pill ex", text:"Example" }) : null,
+            h("span", { class:"pill", text: isDone(t) ? "Finished" : `${done}/${t.steps.length} steps` }),
+            t.snoozedUntil > Date.now() ? h("span", { class:"pill", text:"Back tomorrow" }) : null)),
+        h("button", { class:"quiet", type:"button", text: t.example ? "Hide" : "Delete", "aria-label": (t.example ? "Hide example " : "Delete ") + t.title,
+          onclick: () => { if (t.example) { state.hideExample = true; render(); } else removeTask(t.id); } })),
+      h("p", { class:"ctx", text: ctx }),
+      h("ol", { class:"steps" }, t.steps.map(s => {
+        const edit = h("textarea", { class:"step-edit", value: s.text, maxlength:"160", rows: String(Math.max(1, Math.ceil(s.text.length / 34))), "aria-label":"Edit step" });
+        edit.addEventListener("change", () => editStep(t, s.id, edit.value));
+        edit.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); edit.blur(); } if (e.key === "Escape") { edit.value = s.text; edit.blur(); } });
+        return h("li", { class: (s.done ? "done" : "") + (nxt && s.id === nxt.id ? " next" : "") },
+          h("input", { type:"checkbox", checked: !!s.done, "aria-label": (s.done ? "Mark not done: " : "Mark done: ") + s.text, onchange: () => toggleStep(t, s.id) }),
+          edit, h("div", { class:"step-side" }, (s.ai && !s.edited) ? h("span", { class:"ai-tag", title:"Written by Claude. Tap the step to change it." }, svg(SPARK), "AI") : null, h("span", { class:"mins", text: `${s.minutes}m` })));
+      })),
+      h("div", { class:"add-step" }, input, h("button", { type:"button", text:"Add", onclick: submitStep })),
+      (sample && !isDone(t)) ? h("div", { class:"ai-zone" }, h("span", { class:"lbl" }, svg(SPARK), "AI can do this for you"), h("div", { class:"row" }, h("button", { class:"quiet", type:"button", text: regenBusy ? "Rewriting…" : "Regenerate unfinished steps", disabled: regenBusy, onclick: () => regenerate(t) }))) : null);
+  }
+  function tabTasks(){
+    const v = visibleTasks(), active = v.filter(t => !isDone(t)), finished = v.filter(isDone);
+    const out = [h("h1", { text:"Tasks" }), h("p", { class:"sub", text: `${plural(active.length, "open task")}${finished.length ? ` · ${finished.length} finished` : ""}. Tap any step to edit it.` })];
+    if (v.length) out.push(h("div", { class:"ai-card", role:"note" },
+      h("h3", null, svg(SPARK), "What the AI does"),
+      h("ul", null,
+        h("li", { text:"Writes steps from your task and your answers. Those steps are marked AI." }),
+        h("li", { text:"Splits a step that's still too big (on Today)." }),
+        h("li", { text:"Rewrites the steps you haven't done (Regenerate)." })),
+      h("p", { text:"Everything else is you: edit any step, add your own, check them off. A step you edit loses its AI mark." })));
+    if (state.capture.msg && state.capture.err) out.push(h("p", { class:"status err", role:"status", text: state.capture.msg }));
+    out.push(h("div", { class:"list" }, active.map(renderTask)));
+    if (finished.length) out.push(h("h2", { text:"Finished" }), h("div", { class:"list" }, finished.map(renderTask)));
+    if (!v.length) out.push(h("div", { class:"card" }, h("p", { class:"muted", text:"No tasks yet. Everything you add shows up here with all its steps." }), h("div", { class:"row" }, h("button", { class:"primary", type:"button", text:"Add your first task", onclick: () => { state.tab = "add"; render(); } }))));
+    return out;
+  }
+
+  // ---------- app: settings ----------
+  function settingRow(name, desc, control, forId){
+    return h("div", { class:"setting" }, h("div", { class:"txt" }, forId ? h("label", { for: forId, class:"name", style:"font-size:15px;color:var(--ink)", text: name }) : h("span", { class:"name", text: name }), desc ? h("span", { class:"desc", text: desc }) : null), control);
+  }
+  function toggle(id, key){
+    const inp = h("input", { type:"checkbox", id, role:"switch", checked: !!state.settings[key], onchange: e => { state.settings[key] = e.target.checked; saveSettings(); } });
+    return h("span", { class:"switch" }, inp, h("span", { class:"track" }));
+  }
+  function select(id, key, options, parse){
+    const sel = h("select", { id, onchange: e => { state.settings[key] = parse ? parse(e.target.value) : e.target.value; saveSettings(); } },
+      options.map(([v, l]) => h("option", { value: String(v), text: l, selected: String(state.settings[key]) === String(v) })));
+    return sel;
+  }
+  function tabSettings(){
+    const p = state.profile || {};
+    const nameIn = h("input", { id:"set-name", value: p.name || "", maxlength:"60", style:"width:150px" });
+    nameIn.addEventListener("change", () => { const n = nameIn.value.trim(); if (n) { state.profile = { ...state.profile, name: n }; saveProfile(); render(); } else nameIn.value = p.name || ""; });
+    const emailIn = h("input", { id:"set-email", type:"email", value: p.email || "", maxlength:"120", style:"width:190px" });
+    emailIn.addEventListener("change", () => { const v = emailIn.value.trim(); if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { state.profile = { ...state.profile, email: v }; saveProfile(); } else emailIn.value = p.email || ""; });
+    const focusSel = h("select", { id:"set-focus", onchange: e => { state.profile = { ...state.profile, focus: e.target.value }; saveProfile(); } }, FOCUS.map(f => h("option", { value:f, text:f, selected: p.focus === f })));
+
+    const danger = h("div", { class:"group" },
+      settingRow("Sign out", "Your tasks stay saved to your account.", h("button", { type:"button", text:"Sign out", onclick: signOut })),
+      settingRow("Delete account and data", "Removes every task and setting. This can't be undone.", h("button", { class:"danger", type:"button", text:"Delete", onclick: () => { state.confirmDelete = true; render(); } })));
+    if (state.confirmDelete) danger.append(h("div", { class:"confirm", role:"alertdialog", "aria-label":"Confirm delete" },
+      h("p", { style:"margin:0;font-weight:600", text:`Delete ${plural(state.tasks.size, "task")} and your account?` }),
+      h("div", { class:"row" },
+        h("button", { class:"danger", type:"button", text:"Yes, delete everything", onclick: deleteAll }),
+        h("button", { class:"quiet", type:"button", text:"Cancel", onclick: () => { state.confirmDelete = false; render(); } }))));
+
+    return [
+      h("h1", { text:"Settings" }),
+      h("section", { class:"section" }, h("h2", { text:"Today screen" }), h("div", { class:"group" },
+        settingRow("Show how long a task has waited", "A one-line footnote: days waited, and days until your deadline if you set one.", toggle("set-stakes","stakes"), "set-stakes"),
+        settingRow("Tasks without deadlines first", "Nothing else pushes these, so they come up before dated tasks. Deadlines within 3 days still go first.", toggle("set-nd","noDeadlineFirst"), "set-nd"))),
+      h("section", { class:"section" }, h("h2", { text:"Breakdowns" }), h("div", { class:"group" },
+        settingRow("Ask clarifying questions", "One or two quick questions when a task is vague. Off means steps come back right away.", toggle("set-ask","askQuestions"), "set-ask"),
+        settingRow("First step size", "The longest the first step can take.", select("set-first","firstStepMax",[[5,"5 min"],[10,"10 min"],[15,"15 min"]], Number), "set-first"),
+        settingRow("Steps per task", "Up to 10 for bigger projects. Fewer can feel lighter to start.", select("set-max","maxSteps",[[3,"3 steps"],[5,"Up to 5"],[10,"Up to 10"]], Number), "set-max"))),
+      h("section", { class:"section" }, h("h2", { text:"Google Calendar" }), h("div", { class:"group" },
+        settingRow("Show calendar button", "Adds today's step to Google Calendar in one tap.", toggle("set-cal","calendar"), "set-cal"))),
+      h("section", { class:"section" }, h("h2", { text:"Appearance" }), h("div", { class:"group" },
+        settingRow("Theme", null, select("set-theme","theme",[["system","Match system"],["light","Light"],["dark","Dark"]]), "set-theme"))),
+      h("section", { class:"section" }, h("h2", { text:"Account" }), h("div", { class:"group" },
+        settingRow("Name", null, nameIn, "set-name"),
+        (SB ? settingRow("Email", "Your sign-in email", h("span", { class:"pill", text: p.email || "" })) : settingRow("Email", null, emailIn, "set-email")),
+        settingRow("Working toward", "Shapes how steps are written.", focusSel, "set-focus"),
+        settingRow("Storage", SB ? "Synced across your devices" : "Saved in this browser only", h("span", { class:"pill", text: SB ? "Synced" : "This browser" })))),
+      h("section", { class:"section" }, h("h2", { text:"Help" }), h("div", { class:"group" },
+        settingRow("How First Step works", "A 4-screen walkthrough of the app.", h("button", { type:"button", text:"Show me", onclick: startTour })),
+        settingRow("Behind the build", "The research, the success metrics, and what changed.", h("button", { type:"button", text:"Open", onclick: openBuild })))),
+      danger,
+      h("p", { class:"fine", style:"text-align:center", text:"First Step · v0.7" })
+    ];
+  }
+  async function deleteAll(){
+    const ids = [...state.tasks.keys(), "settings", "profile"];
+    if (state.mode === "db") await Promise.all(ids.map(id => col.doc(id).delete().catch(() => {})));
+    state.tasks.clear(); state.profile = null; state.settings = { ...DEFAULT_SETTINGS }; state.confirmDelete = false;
+    ["tasks","settings","profile"].forEach(k => lsSet(LS[k], null)); resetStats();
+    if (SB) { try { await SB.auth.signOut(); } catch {} me = null; }
+    applyTheme(); state.screen = "welcome"; render();
+  }
+
+  // ---------- shell ----------
+  function nav(){
+    const tabs = [["today","Today"],["add","Add"],["tasks","Tasks"],["settings","Settings"]];
+    return h("nav", { class:"tabs", "aria-label":"Main" }, tabs.map(([id, label]) =>
+      h("button", { type:"button", "aria-current": state.tab === id ? "page" : null, onclick: () => { state.tab = id; state.confirmDelete = false; if (id !== "add" && state.capture.phase === "idle") state.capture.msg = ""; render(); window.scrollTo(0,0); } }, svg(ICONS[id]), label)));
+  }
+  function render(){
+    const app = $("app");
+    // Don't blow away an inline edit or a text field mid-typing.
+    const a = document.activeElement;
+    if (a && app.contains(a) && (a.classList.contains("step-edit") || a.id === "set-name" || a.id === "set-email")) return;
+    let content;
+    if (state.screen === "splash") content = [screenSplash()];
+    else if (state.screen === "welcome") content = [screenWelcome()];
+    else if (state.screen === "signin") content = [screenSignin()];
+    else if (state.screen === "signup") content = [screenSignup()];
+    else if (state.screen === "tour") content = [screenTour()];
+    else if (state.screen === "confirm") content = [screenConfirm()];
+    else if (state.screen === "newpass") content = [screenNewPass()];
+    else if (state.screen === "build") content = [screenBuild()];
+    else {
+      const body = state.tab === "add" ? tabAdd() : state.tab === "tasks" ? tabTasks() : state.tab === "settings" ? tabSettings() : tabToday();
+      content = [h("main", { class:"screen" }, body, toastMsg ? h("p", { class:"status err", role:"status", text: toastMsg }) : null), nav()];
+    }
+    const focusId = a && a.id && app.contains(a) ? a.id : null;
+    app.replaceChildren(...content);
+    if (focusId) { const el = $(focusId); if (el) el.focus(); }
+  }
+
+  // ---------- boot ----------
+  initStats();
+  render();
+  (async () => {
+    try { const r = await fetch("/api/config", { cache: "no-store" }); if (r.ok) Object.assign(CFG, await r.json()); } catch {}
+    if (CFG.ai) sample = { json: (payload) => aiCall(payload) };
+    if (CFG.supabaseUrl && CFG.supabaseAnonKey && window.supabase) {
+      try { SB = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey); } catch { SB = null; }
+    }
+    if (!SB) {
+      state.mode = "local"; loadLocal(); state.ready = true;
+      state.screen = (state.profile && !lsGet(LS.signedOut)) ? "app" : "welcome";
+      applyTheme(); render(); return;
+    }
+    SB.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") { state.screen = "newpass"; render(); return; }
+      if (event === "SIGNED_IN" && session && state.screen !== "newpass" && me !== session.user.id) setTimeout(() => onSession(session), 0);
+    });
+    const { data } = await SB.auth.getSession();
+    state.ready = true;
+    if (data.session && state.screen !== "newpass") await onSession(data.session);
+    else if (state.screen !== "newpass") { state.screen = "welcome"; applyTheme(); render(); }
+  })();
+})();
+</script>
+</body>
+</html>

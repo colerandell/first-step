@@ -1,0 +1,8 @@
+{
+  "name": "first-step",
+  "version": "0.7.0",
+  "private": true,
+  "type": "module",
+  "description": "Break vague career and school tasks into one small step a day.",
+  "engines": { "node": ">=18" }
+}
