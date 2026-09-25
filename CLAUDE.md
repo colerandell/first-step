@@ -32,6 +32,7 @@ Environment variables (set in Vercel): `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` (o
 - Keep the API key and prompts server-side. Never call Anthropic from `index.html`.
 - `api/ai.js` returns errors as `{ code }` (`not_configured`, `not_signed_in`, `rate_limited`, `upstream_error`, `invalid_json`, `bad_request`). `aiErr` in `index.html` maps these codes to messages, so keep them in sync.
 - Step count: when adding a task the user picks how many steps on a scroll wheel (2 to 10, plus a "Custom" row for any number up to `MAX_STEPS` = 100, set in both `index.html` and `api/ai.js`). The breakdown's `max_tokens` grows with the step count. The `clarify` reply suggests a count (`steps`), the "Default steps" setting is the fallback, and the choice is saved on the task as `stepCount` so Regenerate keeps it. The breakdown prompt asks for exactly that many; a first-step split can add one more.
+- Which task's step shows on Today comes from `ranked()`. A task swapped in today (`focusAt`) goes first. Then come deadlines within 3 days, then tasks with no deadline (a setting), then the task that has waited longest. "Swap task" sets `focusAt` for the current day only (days start at 4 AM, `appDayStart`).
 - Number pickers use the `wheel()` helper in `index.html` (scroll, tap, mouse wheel or arrow keys).
 - The client (`cleanSteps` in `index.html`) clamps minutes and caps a list at 10 steps.
 - Keep the portfolio iteration log (a Google Doc in the owner's Drive, "First Step – Iteration Log") up to date: add an entry for each shipped change with what changed and why.

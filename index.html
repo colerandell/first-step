@@ -212,6 +212,26 @@ nav.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(v
 nav.tabs button{border:0;border-radius:0;background:transparent;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px 8px;min-height:60px;font-size:11.5px;font-weight:600}
 nav.tabs button svg{width:22px;height:22px}
 nav.tabs button[aria-current="page"]{color:var(--accent)}
+/* today: swap and what's next */
+.swap{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:14px;background:var(--sunk);border:1px solid var(--line)}
+.swap-title{margin:0;font-weight:600}
+.swap-list{display:flex;flex-direction:column;gap:8px}
+.swap-list button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;font-weight:500;padding:10px 14px}
+.swap-task{font-weight:600}
+.swap-step{font-size:13.5px;color:var(--muted);font-weight:400}
+.swap-due{font-size:12.5px;color:var(--warn);font-weight:500}
+.upnext{border-top:1px solid var(--line);padding-top:4px}
+.upnext summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:6px;min-height:44px;font-weight:600;color:var(--muted)}
+.upnext summary::-webkit-details-marker{display:none}
+.upnext summary:hover{color:var(--ink)}
+.upnext summary .chev{width:18px;height:18px;transition:transform .15s}
+.upnext[open] summary .chev{transform:rotate(180deg)}
+.upnext summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+.upnext-group{display:flex;flex-direction:column;gap:6px;padding-bottom:10px}
+.upnext ol,.upnext ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.45}
+.upnext li{padding-left:2px}
+.upnext li > span:first-child{margin-right:8px}
+.upnext .linkish{align-self:flex-start;font-size:13.5px}
 /* first-run guide */
 ol.how{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;counter-reset:how}
 ol.how li{counter-increment:how;display:grid;grid-template-columns:30px 1fr;gap:10px;align-items:start;color:var(--muted);line-height:1.45}
@@ -451,9 +471,14 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
   }
 
   // ---------- surfacing ----------
+  // "Swap task" puts a task first for the rest of today; the normal order comes back tomorrow.
+  const swappedToday = (t) => (t.focusAt || 0) >= appDayStart();
+  function swapTo(t){ t = realTask(t); t.focusAt = Date.now(); state.swapOpen = false; persist(t); }
   function ranked(tasks){
     const now = Date.now(), ndFirst = state.settings.noDeadlineFirst;
     return tasks.filter(t => !isDone(t) && nextStep(t) && !(t.snoozedUntil > now)).sort((a,b) => {
+      const fa = swappedToday(a), fb = swappedToday(b);
+      if (fa || fb) return (fb ? b.focusAt : 0) - (fa ? a.focusAt : 0); // a task swapped in today goes first
       const ua = hasDeadline(a) && daysUntil(a.timing.date) <= 3, ub = hasDeadline(b) && daysUntil(b.timing.date) <= 3;
       if (ua !== ub) return ua ? -1 : 1;
       if (ua && ub) return daysUntil(a.timing.date) - daysUntil(b.timing.date);
@@ -854,15 +879,49 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
         h("div", { class:"row" },
           h("button", { class:"primary", type:"button", text:"Done", onclick: () => toggleStep(t, s.id) }),
           sample ? h("button", { type:"button", text: busy ? "Splitting…" : "Still too big", disabled: busy, onclick: () => splitStep(t, s.id) }) : null,
-          h("button", { class:"quiet", type:"button", text:"Not today", onclick: () => snooze(t) })),
+          h("button", { class:"quiet", type:"button", text:"Not today", onclick: () => snooze(t) }),
+          r.length > 1 && !state.swapOpen ? h("button", { class:"quiet", type:"button", "aria-expanded":"false", onclick: () => { state.swapOpen = true; render(); } }, svg(SWAP), "Swap task") : null),
         calendarBlock(t, s),
-        line ? h("p", { class:"stakes", text: line }) : null);
+        line ? h("p", { class:"stakes", text: line }) : null,
+        state.swapOpen ? swapPanel(t, r) : null,
+        upNext(t, s, r));
     }
     return [
       h("div", { class:"topbar" }, h("div", { class:"who" }, logo(true), h("h1", { text: `${greeting()}${firstName() ? ", " + firstName() : ""}` }))),
       h("div", { class:"date", text: new Date().toLocaleDateString(undefined, { weekday:"long", month:"long", day:"numeric" }) }),
       h("section", { class:"section", "aria-label":"Today's one step" }, h("h2", { text:"Today's one step" }), card)
     ];
+  }
+
+  const SWAP = '<path d="M7 7h11l-3-3M17 17H6l3 3"/>';
+  // Pick a different task for today. Explains the default order so the choice isn't a mystery.
+  function swapPanel(cur, r){
+    const others = r.filter(x => x.id !== cur.id);
+    return h("div", { class:"swap", role:"group", "aria-label":"Swap today's task" },
+      h("p", { class:"swap-title", text:"Work on a different task today" }),
+      h("p", { class:"fine", text:"First Step normally picks deadlines within 3 days first, then tasks with no deadline, then whichever has waited longest. Your pick lasts for today." }),
+      h("div", { class:"swap-list" }, others.map(o => { const n = nextStep(o);
+        return h("button", { type:"button", onclick: () => swapTo(o) },
+          h("span", { class:"swap-task", text: o.title }),
+          h("span", { class:"swap-step", text: `Next: ${n.text} · ~${n.minutes} min` }),
+          hasDeadline(o) ? h("span", { class:"swap-due", text: `${o.timing.label || "Deadline"}: ${new Date(o.timing.date+"T00:00").toLocaleDateString(undefined,{month:"short",day:"numeric"})}` }) : null); })),
+      h("div", { class:"row" }, h("button", { class:"quiet", type:"button", text:"Keep this one", onclick: () => { state.swapOpen = false; render(); } })));
+  }
+  // "See what's next": the rest of this task, then the next step from each other task.
+  function upNext(t, s, r){
+    const later = t.steps.slice(t.steps.indexOf(s) + 1).filter(x => !x.done);
+    const others = r.filter(x => x.id !== t.id);
+    if (!later.length && !others.length) return null;
+    const SHOW = 4;
+    return h("details", { class:"upnext", open: !!state.upNextOpen, ontoggle: e => { state.upNextOpen = e.target.open; } },
+      h("summary", null, "See what's next", (() => { const c = svg('<path d="M6 9l6 6 6-6"/>'); c.classList.add("chev"); return c; })()),
+      later.length ? h("div", { class:"upnext-group" },
+        h("span", { class:"lbl", text:"Later in this task" }),
+        h("ol", { start: String(t.steps.indexOf(later[0]) + 1) }, later.slice(0, SHOW).map(x => h("li", null, h("span", { text: x.text }), h("span", { class:"mins", text: `${x.minutes}m` })))),
+        later.length > SHOW ? h("button", { class:"linkish", type:"button", text: `+${later.length - SHOW} more in Tasks`, onclick: () => { state.tab = "tasks"; render(); window.scrollTo(0,0); } }) : null) : null,
+      others.length ? h("div", { class:"upnext-group" },
+        h("span", { class:"lbl", text:"Your other tasks" }),
+        h("ul", null, others.map(o => { const n = nextStep(o); return h("li", null, h("span", null, h("b", { text: o.title }), ` · ${n.text}`), h("span", { class:"mins", text: `${n.minutes}m` })); }))) : null);
   }
 
   // ---------- calendar ----------
