@@ -1039,7 +1039,6 @@ nav.tabs button.hint::after{content:"";position:absolute;top:8px;left:calc(50% +
             h("p", { class:"fine", text: (c.rec ? `Suggested: ${c.rec} for this task. ` : "") + "Fewer steps means each one is bigger." }))) : null,
         h("button", { class:"primary block", type:"button", text: gen ? "Writing steps…" : "Break it down", disabled: gen, onclick: () => submitCapture(false) }),
         h("div", { class:"row" },
-          h("button", { class:"quiet", type:"button", text:"Skip questions", disabled: gen, onclick: () => submitCapture(true) }),
           h("button", { class:"quiet", type:"button", text:"Cancel", disabled: gen, onclick: () => { state.capture = { phase: "idle" }; render(); } })));
     }
     const firstTime = state.tasks.size === 0;
