@@ -15,6 +15,7 @@ First Step breaks vague career and school tasks ("update my portfolio", "apply t
 - `index.html`: the whole front end in one file (HTML, CSS and vanilla JS). It has no build step and no framework. Supabase JS loads from jsDelivr.
 - `api/ai.js`: `POST /api/ai`, a Vercel serverless function. All prompts live here. It only accepts three request kinds: `clarify` (one clarifying question), `breakdown` (the task's steps) and `split` ("Still too big"). This keeps it from being used as a general proxy for the API key.
 - `api/config.js`: `GET /api/config`. It tells the app which features are switched on, based on environment variables.
+- `api/keepalive.js` + `vercel.json`: a daily Vercel cron (15:00 UTC) that makes one small Supabase read. Free Supabase projects pause after about a week idle, which takes sign-in down; this happened in October 2026.
 - `supabase/schema.sql`: one `items` table (a JSON document per task, settings row and profile row) plus row-level security so each user sees only their own rows.
 - `package.json`: ES modules (`"type": "module"`), Node 18+. It has no dependencies.
 - `README.md`: setup guide for the non-technical owner (the three levels: deploy, AI, accounts).
